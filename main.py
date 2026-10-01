@@ -3,7 +3,7 @@ import math
 from PIL import Image, ImageDraw
 
 def draw_coquette_bow(draw, center_x, top_y, bow_width, bow_height, color):
-    """Bayanların çok sevdiği zarif Coquette kurdele tasarımı."""
+    """Zarif ve büyük Coquette kurdele tasarımı."""
     left_wing = [
         (center_x, top_y),
         (center_x - bow_width // 2, top_y - bow_height // 2),
@@ -30,7 +30,15 @@ def draw_coquette_bow(draw, center_x, top_y, bow_width, bow_height, color):
     draw.line([(center_x - 30, top_y + 20), (center_x - 150, top_y + 400), (center_x - 100, top_y + 800)], fill=color, width=35)
     draw.line([(center_x + 30, top_y + 20), (center_x + 150, top_y + 400), (center_x + 180, top_y + 800)], fill=color, width=35)
 
-def create_realistic_disco_ball():
+def draw_snowflake(draw, x, y, size, color):
+    """Etrafına yılbaşı havası katmak için zarif kar taneleri çizer."""
+    for i in range(4):
+        angle = i * math.pi / 4
+        dx = int(size * math.cos(angle))
+        dy = int(size * math.sin(angle))
+        draw.line([(x - dx, y - dy), (x + dx, y + dy)], fill=color, width=8)
+
+def create_christmas_coquette_disco():
     width = 4500
     height = 5400
     
@@ -38,82 +46,79 @@ def create_realistic_disco_ball():
     img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     
-    # Pink Coquette ve Krom Renk Paleti
-    baby_pink = (250, 210, 225, 255)     # #FAD2E1
-    soft_rose = (226, 149, 120, 255)     # #E29578
-    sparkle_color = (255, 255, 255, 250)
+    # Pink Coquette & Christmas Renk Paleti
+    baby_pink = (250, 210, 225, 255)     # #FAD2E1 (Kurdele)
+    soft_rose = (226, 149, 120, 255)     # #E29578 (Dış Çerçeve)
+    silver_base = (216, 226, 220, 255)   # #D8E2DC (Disko Topu Tabanı)
+    grid_color = (165, 185, 180, 240)    # Izgara çizgileri
+    sparkle_white = (255, 255, 255, 255) # Parlama ve kar taneleri
     
-    print("Gerçekçi, 3 boyutlu disko topu tasarımı üretiliyor...")
+    print("Yılbaşı temalı kusursuz Coquette Disko tasarımı üretiliyor...")
     
     center_x = width // 2
     center_y = height // 2 + 100
     radius = 900
     
-    # 1. Küresel Derinlik İçin Çok Katmanlı Metalik Taban
-    # Kenarlardan merkeze doğru yumuşak krom tonları
-    for r in range(radius, 0, -15):
-        # Küre efekti için dışarıdan içeriye ton değişimi
-        factor = r / radius
-        gray_val = int(180 + 75 * (1 - factor))
-        layer_color = (gray_val, gray_val + 5, gray_val + 10, 255)
-        draw.ellipse(
-            [center_x - r, center_y - r, center_x + r, center_y + r],
-            fill=layer_color
-        )
-
-    # Dış Çerçeve (Soft Rose)
+    # 1. Disko Topu Tabanı ve Çerçevesi
     draw.ellipse(
         [center_x - radius, center_y - radius, center_x + radius, center_y + radius],
+        fill=silver_base,
         outline=soft_rose,
-        width=25
+        width=28
+    )
+    
+    # 2. Temiz ve Düzenli Izgara (Ayna Facetleri)
+    step = 100
+    # Dikey çizgiler (Küre sınırları içinde)
+    for x in range(center_x - radius + 80, center_x + radius, step):
+        dx = x - center_x
+        if abs(dx) < radius:
+            h = int(math.sqrt(radius**2 - dx**2))
+            draw.line([(x, center_y - h), (x, center_y + h)], fill=grid_color, width=10)
+            
+    # Yatay çizgiler
+    for y in range(center_y - radius + 80, center_y + radius, step):
+        dy = y - center_y
+        if abs(dy) < radius:
+            w = int(math.sqrt(radius**2 - dy**2))
+            draw.line([(center_x - w, y), (center_x + w, y)], fill=grid_color, width=10)
+
+    # 3. Üst Kısıma Şık Parlama Efekti (Yumuşak Beyaz Kavis)
+    draw.arc(
+        [center_x - radius + 150, center_y - radius + 150, center_x + radius - 150, center_y],
+        start=180, end=360, fill=(255, 255, 255, 200), width=25
     )
 
-    # 2. Küresel Kavisli Izgaralar (Ayna Facetleri)
-    # Dikey kavisli dilimler (Boylamlar)
-    step_deg = 12
-    for angle in range(-90, 91, step_deg):
-        rad = math.radians(angle)
-        x_offset = int(radius * math.sin(rad))
-        # Kavisli görünüm için elips yayları veya bükümlü çizgiler simüle ediyoruz
-        draw.arc(
-            [center_x - abs(x_offset) - 200, center_y - radius, center_x + abs(x_offset) + 200, center_y + radius],
-            start=0, end=360, fill=(140, 155, 150, 180), width=10
-        )
-
-    # Yatay kavisli kuşaklar (Enlemler)
-    step_y = 100
-    for y in range(center_y - radius + 100, center_y + radius, step_y):
-        # Yüksekliğe göre kavis yarıçapı
-        h_factor = abs(y - center_y) / radius
-        arc_width_factor = int(radius * math.sqrt(max(0, 1 - h_factor**2)))
-        if arc_width_factor > 50:
-            draw.ellipse(
-                [center_x - arc_width_factor, y - 25, center_x + arc_width_factor, y + 25],
-                outline=(140, 155, 150, 180), width=10
-            )
-
-    # 3. Üstün Parlaklık / Işık Yansıması (Glossy Highlight)
-    # Gerçek bir disko topunun o karakteristik beyaz parlama lekesi
-    highlight_box = [center_x - 450, center_y - 650, center_x + 150, center_y - 250]
-    draw.ellipse(highlight_box, fill=(255, 255, 255, 160))
-
-    # 4. Coquette Kurdele Eklenmesi
+    # 4. Coquette Kurdele (Disko Topunun Üzerine Oturan)
     bow_top_y = center_y - radius - 120
     draw_coquette_bow(draw, center_x, bow_top_y, bow_width=700, bow_height=300, color=baby_pink)
     
-    # 5. Etrafa Şık Parıltı Efektleri
-    sparkles = [
-        (center_x - 1200, center_y - 900),
-        (center_x + 1150, center_y - 800),
-        (center_x - 1050, center_y + 700),
-        (center_x + 1100, center_y + 600)
+    # 5. Etrafa Yılbaşı Teması (Kar Taneleri ve Parıltılar)
+    # Kar tanesi koordinatları
+    snowflakes = [
+        (center_x - 1300, center_y - 1000, 70),
+        (center_x + 1250, center_y - 900, 90),
+        (center_x - 1150, center_y + 800, 60),
+        (center_x + 1200, center_y + 700, 80),
+        (center_x - 1400, center_y - 100, 50),
+        (center_x + 1350, center_y + 100, 65)
     ]
-    for sx, sy in sparkles:
+    for sx, sy, ssize in snowflakes:
+        draw_snowflake(draw, sx, sy, ssize, sparkle_white)
+
+    # Ekstra Parlak Yıldız Süsleri
+    stars = [
+        (center_x - 900, center_y - 700),
+        (center_x + 950, center_y - 650),
+        (center_x - 850, center_y + 500),
+        (center_x + 900, center_y + 450)
+    ]
+    for st_x, st_y in stars:
         draw.polygon([
-            (sx, sy - 100), (sx + 25, sy), (sx + 100, sy), 
-            (sx + 25, sy + 25), (sx, sy + 100), (sx - 25, sy + 25), 
-            (sx - 100, sy), (sx - 25, sy)
-        ], fill=sparkle_color)
+            (st_x, st_y - 80), (st_x + 20, st_y), (st_x + 80, st_y), 
+            (st_x + 20, st_y + 20), (st_x, st_y + 80), (st_x - 20, st_y + 20), 
+            (st_x - 80, st_y), (st_x - 20, st_y)
+        ], fill=sparkle_white)
 
     # Kayıt İşlemi
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -122,7 +127,7 @@ def create_realistic_disco_ball():
     
     file_path = os.path.join(output_dir, "coquette_christmas_disco_bow.png")
     img.save(file_path, "PNG", dpi=(300, 300))
-    print(f"Gerçekçi disko topu tasarımı başarıyla kaydedildi: {file_path}")
+    print(f"Yılbaşı temalı şeffaf tasarım başarıyla kaydedildi: {file_path}")
 
 if __name__ == "__main__":
-    create_realistic_disco_ball()
+    create_christmas_coquette_disco()
