@@ -1,99 +1,95 @@
 import os
 from PIL import Image, ImageDraw, ImageFont
 
-def create_real_script_typography():
+def generate_merry_christmas_design():
+    # Devasa DTF Baskı Boyutu (4500x5400 px, 300 DPI)
     width = 4500
     height = 5400
     
-    # Tamamen şeffaf arka plan (DTF baskı ve Etsy için)
+    # Tamamen şeffaf arka plan
     img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     
-    # İstediğin Lüks Pembe Renk Paleti
-    primary_pink = (214, 90, 127, 255)    # Derin ve çekici gül kurusu / pembe
-    shadow_pink = (150, 50, 80, 255)      # Derinlik gölgesi
-    sparkle_white = (255, 255, 255, 255)  # Parlak yıldızlar
+    # Lüks Gül Kurusu / Pembe Renk Tonu
+    text_color = (210, 75, 110, 255)     # Canlı pembe
+    shadow_color = (140, 40, 70, 255)    # Derinlik gölgesi
+    sparkle_white = (255, 255, 255, 255) # Yıldızlar
     
-    print("Gerçek kaligrafi fontuyla coquette tasarımı oluşturuluyor...")
+    print("Merry Christmas tasarımı sıfırdan oluşturuluyor...")
     
     center_x = width // 2
     center_y = height // 2
     
-    # Repoya yükleyeceğin script.ttf fontunu yüklüyoruz
+    # Font yükleme (script.ttf varsa onu kullanır, yoksa güvenli varsayılana geçer)
     font_path = "script.ttf"
-    font_size = 420  # Devasa ve şık görünüm için büyük boyut
+    font_size = 500
     
     if os.path.exists(font_path):
         font = ImageFont.truetype(font_path, font_size)
+        print("script.ttf başarıyla yüklendi!")
     else:
-        # Eğer font yüklenmediyse hata vermemesi için sistem fontuna düşer
         font = ImageFont.load_default()
-        print("UYARI: script.ttf bulunamadı! Lütfen depoya script.ttf fontunu ekleyin.")
+        print("DİKKAT: script.ttf bulunamadı, varsayılan font kullanılıyor.")
 
+    # Yazılacak Metinler
     line1 = "Merry"
     line2 = "Christmas"
-    
-    # Metinlerin kusursuz ortalanması ve çizilmesi (Gölge efektiyle 3D lüks duruş)
     
     # 1. Satır: Merry
     bbox1 = font.getbbox(line1)
     w1 = bbox1[2] - bbox1[0]
     h1 = bbox1[3] - bbox1[1]
     x1 = center_x - (w1 // 2)
-    y1 = center_y - 600
+    y1 = center_y - 500
     
-    # Gölge
-    draw.text((x1 + 10, y1 + 10), line1, fill=shadow_pink, font=font)
-    # Ana Metin
-    draw.text((x1, y1), line1, fill=primary_pink, font=font)
+    # Gölge ve Ana Metin Çizimi
+    draw.text((x1 + 10, y1 + 10), line1, fill=shadow_color, font=font)
+    draw.text((x1, y1), line1, fill=text_color, font=font)
 
-    # 2. Satır: Christmas (Daha da gösterişli olması için biraz daha büyük boyutta)
-    font_large = font
-    if os.path.exists(font_path):
-        font_large = ImageFont.truetype(font_path, 480)
-        
-    bbox2 = font_large.getbbox(line2)
+    # 2. Satır: Christmas
+    bbox2 = font.getbbox(line2)
     w2 = bbox2[2] - bbox2[0]
     h2 = bbox2[3] - bbox2[1]
     x2 = center_x - (w2 // 2)
-    y2 = center_y + 50
+    y2 = center_y + 100
     
-    # Gölge
-    draw.text((x2 + 12, y2 + 12), line2, fill=shadow_pink, font=font_large)
-    # Ana Metin
-    draw.text((x2, y2), line2, fill=primary_pink, font=font_large)
+    draw.text((x2 + 10, y2 + 10), line2, fill=shadow_color, font=font)
+    draw.text((x2, y2), line2, fill=text_color, font=font)
 
-    # 3. Etraftaki Etsy Tarzı Işıltılı Yıldız Detayları (Glitter Sparkles)
-    def draw_sparkle(d, sx, sy, size):
-        # 4 kollu zarif yıldız
-        d.polygon([
-            (sx, sy - size), (sx + size//4, sy - size//4),
-            (sx + size, sy), (sx + size//4, sy + size//4),
-            (sx, sy + size), (sx - size//4, sy + size//4),
-            (sx - size, sy), (sx - size//4, sy - size//4)
-        ], fill=sparkle_white)
-        # İç parlama çemberi
-        d.ellipse([sx - size//3, sy - size//3, sx + size//3, sy + size//3], fill=(255, 200, 215, 255))
-
+    # Etraftaki Parıltılı Yıldızlar
     sparkles = [
-        (center_x - 1300, center_y - 750, 95),
-        (center_x + 1350, center_y - 700, 110),
-        (center_x - 1550, center_y + 100, 85),
-        (center_x + 1500, center_y + 150, 100),
-        (center_x - 1100, center_y + 750, 75),
-        (center_x + 1100, center_y + 700, 80)
+        (center_x - 1200, center_y - 700, 90),
+        (center_x + 1250, center_y - 650, 100),
+        (center_x - 1400, center_y + 300, 80),
+        (center_x + 1350, center_y + 350, 90),
+        (center_x - 1000, center_y + 700, 70),
+        (center_x + 1000, center_y + 650, 75)
     ]
     for sx, sy, ssize in sparkles:
-        draw_sparkle(draw, sx, sy, ssize)
+        draw.polygon([
+            (sx, sy - ssize), (sx + ssize//4, sy - ssize//4),
+            (sx + size if 'size' in locals() else sx + ssize, sy), (sx + ssize//4, sy + ssize//4),
+            (sx, sy + ssize), (sx - ssize//4, sy + ssize//4),
+            (sx - ssize, sy), (sx - ssize//4, sy - ssize//4)
+        ], fill=sparkle_white) if False else None # Güvenli yıldız çizimi için aşağıdakini kullanalım:
+        
+    # Yıldızların hatasız çizimi
+    for sx, sy, ssize in sparkles:
+        draw.polygon([
+            (sx, sy - ssize), (sx + ssize//3, sy), (sx + ssize, sy), 
+            (sx + ssize//3, sy + ssize//3), (sx, sy + ssize), (sx - ssize//3, sy + ssize//3), 
+            (sx - ssize, sy), (sx - ssize//3, sy)
+        ], fill=sparkle_white)
+        draw.ellipse([sx - ssize//3, sy - ssize//3, sx + ssize//3, sy + ssize//3], fill=(255, 190, 205, 255))
 
-    # Çıktı Kaydı
+    # Çıktı Kaydı (Yeni ve net isimle kaydediyoruz)
     base_dir = os.path.dirname(os.path.abspath(__file__))
     output_dir = os.path.join(base_dir, "output")
     os.makedirs(output_dir, exist_ok=True)
     
-    file_path = os.path.join(output_dir, "pink_christmas_typography.png")
+    file_path = os.path.join(output_dir, "merry_christmas_pure.png")
     img.save(file_path, "PNG", dpi=(300, 300))
-    print(f"Gerçek script fontlu tasarım kaydedildi: {file_path}")
+    print(f"Merry Christmas tasarımı kaydedildi: {file_path}")
 
 if __name__ == "__main__":
-    create_real_script_typography()
+    generate_merry_christmas_design()
