@@ -1,112 +1,112 @@
-
 import os
-import math
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
-def draw_swash_letter_m(draw, x, y, size, color):
-    """Zarif kıvrımlı harf detayı (M harfi stili)."""
-    # Kıvrımlı şık hatlar
-    draw.arc([x, y, x + size, y + size], start=180, end=360, fill=color, width=22)
-    draw.line([(x + size//2, y + size//2), (x + size//2, y + size + 100)], fill=color, width=22)
-    # Uçlardaki coquette kıvrımları (Swash)
-    draw.arc([x - 50, y - 50, x + 50, y + 50], start=0, end=270, fill=color, width=16)
-
-def draw_coquette_bow(draw, center_x, top_y, bow_width, bow_height, color):
-    """Metnin üzerindeki zarif Coquette kurdele."""
-    left_wing = [
-        (center_x, top_y),
-        (center_x - bow_width // 2, top_y - bow_height // 2),
-        (center_x - bow_width, top_y + bow_height // 3),
-        (center_x, top_y + bow_height // 4)
-    ]
-    right_wing = [
-        (center_x, top_y),
-        (center_x + bow_width // 2, top_y - bow_height // 2),
-        (center_x + bow_width, top_y + bow_height // 3),
-        (center_x, top_y + bow_height // 4)
-    ]
-    draw.polygon(left_wing, fill=color)
-    draw.polygon(right_wing, fill=color)
-    
-    knot_radius = bow_width // 6
-    draw.ellipse([center_x - knot_radius, top_y - knot_radius, center_x + knot_radius, top_y + knot_radius], fill=color)
-    
-    # Sarkan kurdele uçları
-    draw.line([(center_x - 20, top_y + 15), (center_x - 140, top_y + 350), (center_x - 100, top_y + 700)], fill=color, width=30)
-    draw.line([(center_x + 20, top_y + 15), (center_x + 140, top_y + 350), (center_x + 180, top_y + 700)], fill=color, width=30)
-
-def create_elegant_script_typography():
+def create_pink_glitter_typography():
     width = 4500
     height = 5400
     
-    # Etsy standartlarında tamamen şeffaf arka plan
+    # Etsy standartlarında tamamen şeffaf arka plan (DTF baskı için kusursuz)
     img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     
-    # Pink Coquette & Luxury Renk Paleti (Işıltılı gül kurusu & bebek pembesi)
-    deep_rose = (180, 70, 95, 255)       # Ana şık yazı rengi (Derin Gül Kurusu)
-    glitter_sparkle = (255, 220, 230, 220) # Işıltılı parlama tonu
-    baby_pink = (250, 210, 225, 255)     # Kurdele rengi
-    accent_gold = (235, 180, 140, 255)   # Detay renk
+    # Pink Coquette & Luxury Renk Paleti
+    primary_pink = (219, 112, 147, 255)   # Derin ve şık pembe tonu (Medium Violet Red / Gül Kurusu)
+    soft_blush = (255, 182, 193, 255)     # Bebek pembesi yansımalar ve ışıltı dolgusu
+    accent_rose = (199, 21, 133, 255)     # Kontur ve derinlik tonu
+    sparkle_white = (255, 255, 255, 255)  # Parlak yıldızlar
     
-    print("Zarif kıvrımlı Etsy tipografi tasarımı üretiliyor...")
+    print("Sıfırdan pembe tonlarında zarif tipografi tasarımı oluşturuluyor...")
     
     center_x = width // 2
     center_y = height // 2
     
-    # 1. Üst Kısıma Coquette Kurdele
-    bow_top_y = center_y - 950
-    draw_coquette_bow(draw, center_x, bow_top_y, bow_width=700, bow_height=280, color=baby_pink)
-    
-    # 2. "MERRY" Kelimesi Alanı (Zarif script / swash tarzı estetik bant)
-    # Arkaya hafif parıltılı lüks bir zemin ekleyelim
-    draw.rounded_rectangle(
-        [center_x - 1600, center_y - 650, center_x + 1600, center_y - 250],
-        radius=60, fill=(255, 248, 247, 210), outline=accent_gold, width=12
-    )
-    
-    # "MERRY" metni için lüks serif/script simülasyonu ve kıvrımlar
-    # Harflerin etrafındaki o sanatsal swash (kıvrım) çizgileri
-    draw.arc([center_x - 1400, center_y - 580, center_x - 1100, center_y - 350], start=30, end=210, fill=deep_rose, width=18)
-    draw.arc([center_x + 1100, center_y - 580, center_x + 1400, center_y - 350], start=330, end=150, fill=deep_rose, width=18)
-    
-    # 3. "CHRISTMAS" veya "COQUETTE" Kelimesi Alanı (Görseldeki gibi alt alta gösterişli yapı)
-    draw.rounded_rectangle(
-        [center_x - 1800, center_y - 150, center_x + 1800, center_y + 350],
-        radius=60, fill=(255, 248, 247, 210), outline=accent_gold, width=12
-    )
-    
-    # Alt kelime etrafındaki zarif kıvrımlar
-    draw.arc([center_x - 1600, center_y - 80, center_x - 1300, center_y + 150], start=40, end=220, fill=deep_rose, width=18)
-    draw.arc([center_x + 1300, center_y - 80, center_x + 1600, center_y + 150], start=320, end=140, fill=deep_rose, width=18)
-
-    # 4. Etrafa Işıltılı Glitter / Yıldız Detayları (Etsy satıcılarının favorisi)
-    sparkles = [
-        (center_x - 1400, center_y - 800, 80),
-        (center_x + 1450, center_y - 750, 95),
-        (center_x - 1550, center_y + 200, 70),
-        (center_x + 1500, center_y + 250, 85),
-        (center_x - 1200, center_y + 600, 60),
-        (center_x + 1200, center_y + 600, 60)
+    # Font Yükleme Stratejisi: Sistemdeki en şık fontu arar, yoksa varsayılan yüksek kaliteli ölçeklendirme yapar
+    font_size = 280
+    font = None
+    font_paths = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSerifItalic.ttf"
     ]
-    for sx, sy, ssize in sparkles:
-        # Şık 4 kollu glitter yıldız
-        draw.polygon([
-            (sx, sy - ssize), (sx + ssize//4, sy), (sx + ssize, sy), 
-            (sx + ssize//4, sy + ssize//4), (sx, sy + ssize), (sx - ssize//4, sy + ssize//4), 
-            (sx - ssize, sy), (sx - ssize//4, sy)
-        ], fill=(255, 255, 255, 255))
-        # İç parıltı
-        draw.ellipse([sx - ssize//3, sy - ssize//3, sx + ssize//3, sy + ssize//3], fill=glitter_sparkle)
+    
+    for path in font_paths:
+        if os.path.exists(path):
+            try:
+                font = ImageFont.truetype(path, font_size)
+                break
+            except Exception:
+                continue
+                
+    if font is None:
+        font = ImageFont.load_default()
 
-    # Kayıt İşlemi
+    # Tasarım Metinleri (İstediğin şık üst üste iki satırlı yapı)
+    line1 = "Merry"
+    line2 = "Christmas"
+    
+    # Metinlerin görseldeki gibi estetik konumlandırılması
+    # Gönderdiğin görseldeki o uçları kıvrımlı zarif hatları çizimsel vektörlerle destekliyoruz.
+    
+    # 1. Satır Arka Plan Işıltı Efekti ve Estetik Bant
+    draw.rounded_rectangle(
+        [center_x - 1700, center_y - 700, center_x + 1700, center_y - 250],
+        radius=50, fill=(255, 240, 245, 180), outline=soft_blush, width=10
+    )
+    
+    # 2. Satır Arka Plan Efekti
+    draw.rounded_rectangle(
+        [center_x - 1900, center_y - 150, center_x + 1900, center_y + 350],
+        radius=50, fill=(255, 240, 245, 180), outline=soft_blush, width=10
+    )
+
+    # Görseldeki o akıcı, kıvrımlı harf uçlarını (swash) simüle eden sanat çizgileri
+    # Üst satır kıvrımları
+    draw.arc([center_x - 1500, center_y - 620, center_x - 1100, center_y - 350], start=20, end=200, fill=primary_pink, width=16)
+    draw.arc([center_x + 1100, center_y - 620, center_x + 1500, center_y - 350], start=340, end=160, fill=primary_pink, width=16)
+    
+    # Alt satır kıvrımları
+    draw.arc([center_x - 1700, center_y - 80, center_x - 1300, center_y + 200], start=30, end=210, fill=primary_pink, width=16)
+    draw.arc([center_x + 1300, center_y - 80, center_x + 1700, center_y + 200], start=330, end=150, fill=primary_pink, width=16)
+
+    # Metin Çizimi (Gölge ve ana renk katmanıyla lüks 3D glitter hissi)
+    # 1. Satır Yazı Gölgesi
+    draw.text((center_x - 400 + 8, center_y - 520 + 8), line1, fill=accent_rose, font=font)
+    # 1. Satır Ana Metin
+    draw.text((center_x - 400, center_y - 520), line1, fill=primary_pink, font=font)
+    
+    # 2. Satır Yazı Gölgesi
+    draw.text((center_x - 700 + 8, center_y + 20 + 8), line2, fill=accent_rose, font=font)
+    # 2. Satır Ana Metin
+    draw.text((center_x - 700, center_y + 20), line2, fill=primary_pink, font=font)
+
+    # Etrafa serpiştirilmiş lüks ışıltılı yıldızlar (Glitter Sparkles)
+    sparkles = [
+        (center_x - 1400, center_y - 850, 75),
+        (center_x + 1450, center_y - 800, 90),
+        (center_x - 1600, center_y + 150, 65),
+        (center_x + 1550, center_y + 200, 80),
+        (center_x - 1200, center_y + 700, 55),
+        (center_x + 1200, center_y + 650, 60)
+    ]
+    
+    for sx, sy, ssize in sparkles:
+        # Dört kollu şık yıldız
+        draw.polygon([
+            (sx, sy - ssize), (sx + ssize//3, sy), (sx + ssize, sy), 
+            (sx + ssize//3, sy + ssize//3), (sx, sy + ssize), (sx - ssize//3, sy + ssize//3), 
+            (sx - ssize, sy), (sx - ssize//3, sy)
+        ], fill=sparkle_white)
+        # İç parıltı çemberi
+        draw.ellipse([sx - ssize//3, sy - ssize//3, sx + ssize//3, sy + ssize//3], fill=soft_blush)
+
+    # Çıktı Klasörü ve Kayıt İşlemi
     base_dir = os.path.dirname(os.path.abspath(__file__))
     output_dir = os.path.join(base_dir, "output")
     os.makedirs(output_dir, exist_ok=True)
     
-    file_path = os.path.join(output_dir, "coquette_luxury_script_typography.png")
+    file_path = os.path.join(output_dir, "coquette_pink_glitter_typography.png")
     img.save(file_path, "PNG", dpi=(300, 300))
-    print(f"Zarif tipografi tasarımı başarıyla kaydedildi: {file_path}")
+    print(f"Pembe tonlarındaki zarif tipografi başarıyla kaydedildi: {file_path}")
 
 if __name__ == "__main__":
-    create_elegant_script_typography()
+    create_pink_glitter_typography()
