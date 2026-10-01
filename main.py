@@ -3,8 +3,7 @@ import math
 from PIL import Image, ImageDraw
 
 def draw_coquette_bow(draw, center_x, top_y, bow_width, bow_height, color):
-    """Disko topunun üzerine oturan ve ön yüzeyine doğru uzunca sarkan Coquette kurdele çizer."""
-    # Kurdele kanatları (Fiyonk kısmı)
+    """Disko topunun üzerine oturan ve kumaş üzerine sarkan Coquette kurdele çizer."""
     left_wing = [
         (center_x, top_y),
         (center_x - bow_width // 2, top_y - bow_height // 2),
@@ -21,38 +20,37 @@ def draw_coquette_bow(draw, center_x, top_y, bow_width, bow_height, color):
     draw.polygon(left_wing, fill=color)
     draw.polygon(right_wing, fill=color)
     
-    # Kurdele düğüm merkezi
     knot_radius = bow_width // 5
     draw.ellipse(
         [center_x - knot_radius, top_y - knot_radius, center_x + knot_radius, top_y + knot_radius],
         fill=color
     )
     
-    # Disko topunun üzerine doğru süzülen uzun kurdele kuyrukları (Koordinatları aşağı uzattık)
     draw.line([(center_x - 30, top_y + 20), (center_x - 150, top_y + 400), (center_x - 100, top_y + 800)], fill=color, width=35)
     draw.line([(center_x + 30, top_y + 20), (center_x + 150, top_y + 400), (center_x + 180, top_y + 800)], fill=color, width=35)
 
-def create_coquette_christmas_design():
+def create_sweatshirt_mockup():
     width = 4500
     height = 5400
     
-    # Şeffaf arka plan
-    img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    # Yumuşak pastel krem/pembe sweatshirt kumaş arka planı (#FDF0ED)
+    shirt_bg_color = (253, 240, 237, 255)
+    img = Image.new("RGBA", (width, height), shirt_bg_color)
     draw = ImageDraw.Draw(img)
     
-    # Renk Paleti
+    # Tasarım Renkleri
     baby_pink = (250, 210, 225, 255)   # #FAD2E1
     soft_rose = (226, 149, 120, 255)   # #E29578
     silver_chrome = (216, 226, 220, 255) # #D8E2DC
     sparkle_color = (255, 255, 255, 240)
     
-    print("Kurdeleleri uzatılmış kusursuz Pink Coquette tasarımı üretiliyor...")
+    print("Doğrudan sweatshirt baskılı final görsel üretiliyor...")
     
     center_x = width // 2
-    center_y = height // 2 + 200
+    center_y = height // 2 + 100
     radius = 900
     
-    # 1. Disko Topu Gövdesi
+    # Disko Topu Gövdesi
     draw.ellipse(
         [center_x - radius, center_y - radius, center_x + radius, center_y + radius],
         fill=silver_chrome,
@@ -72,11 +70,11 @@ def create_coquette_christmas_design():
                    (center_x + int(math.sqrt(max(0, radius**2 - (y - center_y)**2))), y)], 
                   fill=(170, 190, 185, 220), width=12)
 
-    # 2. Coquette Kurdele (Disko topunun üstünde ve uzun kuyruklarıyla)
+    # Coquette Kurdele
     bow_top_y = center_y - radius - 120
     draw_coquette_bow(draw, center_x, bow_top_y, bow_width=700, bow_height=300, color=baby_pink)
     
-    # 3. Çevresine Parıltı Efektleri
+    # Parıltı Efektleri
     sparkles = [
         (center_x - 1200, center_y - 900),
         (center_x + 1150, center_y - 800),
@@ -93,9 +91,9 @@ def create_coquette_christmas_design():
     output_dir = "output"
     os.makedirs(output_dir, exist_ok=True)
     
-    file_path = os.path.join(output_dir, "coquette_disco_bow_perfect.png")
+    file_path = os.path.join(output_dir, "coquette_sweatshirt_mockup.png")
     img.save(file_path, "PNG", dpi=(300, 300))
-    print(f"Mükemmelleştirilmiş tasarım başarıyla kaydedildi: {file_path}")
+    print(f"Final sweatshirt mockup görseli başarıyla kaydedildi: {file_path}")
 
 if __name__ == "__main__":
-    create_coquette_christmas_design()
+    create_sweatshirt_mockup()
