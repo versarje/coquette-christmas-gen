@@ -3,7 +3,6 @@ import math
 from PIL import Image, ImageDraw
 
 def draw_coquette_bow(draw, center_x, top_y, bow_width, bow_height, color):
-    """Disko topunun üzerine oturan ve kumaş üzerine sarkan Coquette kurdele çizer."""
     left_wing = [
         (center_x, top_y),
         (center_x - bow_width // 2, top_y - bow_height // 2),
@@ -29,28 +28,24 @@ def draw_coquette_bow(draw, center_x, top_y, bow_width, bow_height, color):
     draw.line([(center_x - 30, top_y + 20), (center_x - 150, top_y + 400), (center_x - 100, top_y + 800)], fill=color, width=35)
     draw.line([(center_x + 30, top_y + 20), (center_x + 150, top_y + 400), (center_x + 180, top_y + 800)], fill=color, width=35)
 
-def create_sweatshirt_mockup():
+def create_transparent_coquette_design():
     width = 4500
     height = 5400
     
-    # Yumuşak pastel krem/pembe sweatshirt kumaş arka planı (#FDF0ED)
-    shirt_bg_color = (253, 240, 237, 255)
-    img = Image.new("RGBA", (width, height), shirt_bg_color)
+    img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     
-    # Tasarım Renkleri
-    baby_pink = (250, 210, 225, 255)   # #FAD2E1
-    soft_rose = (226, 149, 120, 255)   # #E29578
+    baby_pink = (250, 210, 225, 255)     # #FAD2E1
+    soft_rose = (226, 149, 120, 255)     # #E29578
     silver_chrome = (216, 226, 220, 255) # #D8E2DC
     sparkle_color = (255, 255, 255, 240)
     
-    print("Doğrudan sweatshirt baskılı final görsel üretiliyor...")
+    print("Etsy standartlarına uygun şeffaf Coquette tasarımı üretiliyor...")
     
     center_x = width // 2
     center_y = height // 2 + 100
     radius = 900
     
-    # Disko Topu Gövdesi
     draw.ellipse(
         [center_x - radius, center_y - radius, center_x + radius, center_y + radius],
         fill=silver_chrome,
@@ -58,7 +53,6 @@ def create_sweatshirt_mockup():
         width=25
     )
     
-    # Disko topu kare dokusu
     step = 120
     for x in range(center_x - radius + 100, center_x + radius, step):
         draw.line([(x, center_y - int(math.sqrt(max(0, radius**2 - (x - center_x)**2)))), 
@@ -70,11 +64,9 @@ def create_sweatshirt_mockup():
                    (center_x + int(math.sqrt(max(0, radius**2 - (y - center_y)**2))), y)], 
                   fill=(170, 190, 185, 220), width=12)
 
-    # Coquette Kurdele
     bow_top_y = center_y - radius - 120
     draw_coquette_bow(draw, center_x, bow_top_y, bow_width=700, bow_height=300, color=baby_pink)
     
-    # Parıltı Efektleri
     sparkles = [
         (center_x - 1200, center_y - 900),
         (center_x + 1150, center_y - 800),
@@ -88,12 +80,14 @@ def create_sweatshirt_mockup():
             (sx - 100, sy), (sx - 25, sy)
         ], fill=sparkle_color)
 
-    output_dir = "output"
+    # Mutlak dizin (Absolute path) kullanarak output klasörünü garantiye alıyoruz
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    output_dir = os.path.join(base_dir, "output")
     os.makedirs(output_dir, exist_ok=True)
     
-    file_path = os.path.join(output_dir, "coquette_sweatshirt_mockup.png")
+    file_path = os.path.join(output_dir, "coquette_christmas_disco_bow.png")
     img.save(file_path, "PNG", dpi=(300, 300))
-    print(f"Final sweatshirt mockup görseli başarıyla kaydedildi: {file_path}")
+    print(f"Baskıya hazır şeffaf tasarım başarıyla kaydedildi: {file_path}")
 
 if __name__ == "__main__":
-    create_sweatshirt_mockup()
+    create_transparent_coquette_design()
