@@ -1,104 +1,90 @@
 import os
 from PIL import Image, ImageDraw, ImageFont
 
-def create_coquette_design():
+def create_real_script_typography():
     width = 4500
     height = 5400
     
-    # Tamamen şeffaf arka plan
+    # Tamamen şeffaf arka plan (DTF baskı ve Etsy için)
     img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     
-    # Zarif Coquette Renk Paleti
-    pink_bg = (255, 230, 238, 220)       # Yumuşak pudra pembe kutu arka planı
-    pink_border = (245, 150, 175, 255)   # Şık ince pembe çerçeve
-    text_color = (190, 60, 95, 255)      # Derin lüks gül kurusu yazı rengi
-    sparkle_color = (255, 255, 255, 255) # Beyaz ışıltılar
+    # İstediğin Lüks Pembe Renk Paleti
+    primary_pink = (214, 90, 127, 255)    # Derin ve çekici gül kurusu / pembe
+    shadow_pink = (150, 50, 80, 255)      # Derinlik gölgesi
+    sparkle_white = (255, 255, 255, 255)  # Parlak yıldızlar
     
-    print("Profesyonel coquette tasarımı oluşturuluyor...")
+    print("Gerçek kaligrafi fontuyla coquette tasarımı oluşturuluyor...")
     
     center_x = width // 2
     center_y = height // 2
     
-    # Güvenli font seçimi (Sistem fontlarından en kalın ve modern olanı seçer)
-    font = None
-    for path in [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"
-    ]:
-        if os.path.exists(path):
-            try:
-                font = ImageFont.truetype(path, 280)
-                break
-            except Exception:
-                continue
-    if font is None:
-        font = ImageFont.load_default()
-
-    # 1. Şık ve geniş arka plan rozetleri (Kutuları)
-    # Üst Kutu (Merry)
-    draw.rounded_rectangle(
-        [center_x - 1400, center_y - 550, center_x + 1400, center_y - 200],
-        radius=70, fill=pink_bg, outline=pink_border, width=12
-    )
-    # Alt Kutu (Christmas)
-    draw.rounded_rectangle(
-        [center_x - 1700, center_y - 50, center_x + 1700, center_y + 300],
-        radius=70, fill=pink_bg, outline=pink_border, width=12
-    )
-
-    # 2. Metinlerin Kusursuz Yerleşimi (bbox ile tam ortalama)
-    line1 = "MERRY"
-    line2 = "CHRISTMAS"
+    # Repoya yükleyeceğin script.ttf fontunu yüklüyoruz
+    font_path = "script.ttf"
+    font_size = 420  # Devasa ve şık görünüm için büyük boyut
     
-    # Metin 1 Ölçümü ve Çizimi
+    if os.path.exists(font_path):
+        font = ImageFont.truetype(font_path, font_size)
+    else:
+        # Eğer font yüklenmediyse hata vermemesi için sistem fontuna düşer
+        font = ImageFont.load_default()
+        print("UYARI: script.ttf bulunamadı! Lütfen depoya script.ttf fontunu ekleyin.")
+
+    line1 = "Merry"
+    line2 = "Christmas"
+    
+    # Metinlerin kusursuz ortalanması ve çizilmesi (Gölge efektiyle 3D lüks duruş)
+    
+    # 1. Satır: Merry
     bbox1 = font.getbbox(line1)
     w1 = bbox1[2] - bbox1[0]
     h1 = bbox1[3] - bbox1[1]
     x1 = center_x - (w1 // 2)
-    y1 = (center_y - 375) - (h1 // 2)
-    draw.text((x1, y1), line1, fill=text_color, font=font)
+    y1 = center_y - 600
+    
+    # Gölge
+    draw.text((x1 + 10, y1 + 10), line1, fill=shadow_pink, font=font)
+    # Ana Metin
+    draw.text((x1, y1), line1, fill=primary_pink, font=font)
 
-    # Metin 2 İçin Daha Büyük Font Denemesi (Christmas için)
+    # 2. Satır: Christmas (Daha da gösterişli olması için biraz daha büyük boyutta)
     font_large = font
-    try:
-        for path in [
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
-        ]:
-            if os.path.exists(path):
-                font_large = ImageFont.truetype(path, 340)
-                break
-    except Exception:
-        pass
-
+    if os.path.exists(font_path):
+        font_large = ImageFont.truetype(font_path, 480)
+        
     bbox2 = font_large.getbbox(line2)
     w2 = bbox2[2] - bbox2[0]
     h2 = bbox2[3] - bbox2[1]
     x2 = center_x - (w2 // 2)
-    y2 = (center_y + 125) - (h2 // 2)
-    draw.text((x2, y2), line2, fill=text_color, font=font_large)
+    y2 = center_y + 50
+    
+    # Gölge
+    draw.text((x2 + 12, y2 + 12), line2, fill=shadow_pink, font=font_large)
+    # Ana Metin
+    draw.text((x2, y2), line2, fill=primary_pink, font=font_large)
 
-    # 3. Etraftaki Estetik Parlayan Yıldız Detayları
-    def draw_star(d, sx, sy, size):
+    # 3. Etraftaki Etsy Tarzı Işıltılı Yıldız Detayları (Glitter Sparkles)
+    def draw_sparkle(d, sx, sy, size):
+        # 4 kollu zarif yıldız
         d.polygon([
             (sx, sy - size), (sx + size//4, sy - size//4),
             (sx + size, sy), (sx + size//4, sy + size//4),
             (sx, sy + size), (sx - size//4, sy + size//4),
             (sx - size, sy), (sx - size//4, sy - size//4)
-        ], fill=sparkle_color)
+        ], fill=sparkle_white)
+        # İç parlama çemberi
+        d.ellipse([sx - size//3, sy - size//3, sx + size//3, sy + size//3], fill=(255, 200, 215, 255))
 
-    stars = [
-        (center_x - 1200, center_y - 700, 90),
-        (center_x + 1250, center_y - 650, 110),
-        (center_x - 1500, center_y + 150, 80),
-        (center_x + 1450, center_y + 200, 100),
-        (center_x - 900, center_y + 600, 70),
-        (center_x + 900, center_y + 550, 75)
+    sparkles = [
+        (center_x - 1300, center_y - 750, 95),
+        (center_x + 1350, center_y - 700, 110),
+        (center_x - 1550, center_y + 100, 85),
+        (center_x + 1500, center_y + 150, 100),
+        (center_x - 1100, center_y + 750, 75),
+        (center_x + 1100, center_y + 700, 80)
     ]
-    for sx, sy, ssize in stars:
-        draw_star(draw, sx, sy, ssize)
+    for sx, sy, ssize in sparkles:
+        draw_sparkle(draw, sx, sy, ssize)
 
     # Çıktı Kaydı
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -107,7 +93,7 @@ def create_coquette_design():
     
     file_path = os.path.join(output_dir, "pink_christmas_typography.png")
     img.save(file_path, "PNG", dpi=(300, 300))
-    print(f"Temiz coquette tasarımı başarıyla kaydedildi: {file_path}")
+    print(f"Gerçek script fontlu tasarım kaydedildi: {file_path}")
 
 if __name__ == "__main__":
-    create_coquette_design()
+    create_real_script_typography()
