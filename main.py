@@ -3,7 +3,7 @@ import math
 from PIL import Image, ImageDraw
 
 def draw_coquette_bow(draw, center_x, top_y, bow_width, bow_height, color):
-    """Disko topunun üzerine kusursuz oturan ve sarkan Coquette kurdele çizer."""
+    """Disko topunun üzerine oturan ve ön yüzeyine doğru uzunca sarkan Coquette kurdele çizer."""
     # Kurdele kanatları (Fiyonk kısmı)
     left_wing = [
         (center_x, top_y),
@@ -28,11 +28,9 @@ def draw_coquette_bow(draw, center_x, top_y, bow_width, bow_height, color):
         fill=color
     )
     
-    # Aşağı doğru süzülen uzun ve estetik kurdele kuyrukları
-    # Sol kuyruk kıvrımı
-    draw.line([(center_x - 30, top_y + 20), (center_x - 120, top_y + 250), (center_x - 80, top_y + 400)], fill=color, width=30)
-    # Sağ kuyruk kıvrımı
-    draw.line([(center_x + 30, top_y + 20), (center_x + 120, top_y + 250), (center_x + 160, top_y + 400)], fill=color, width=30)
+    # Disko topunun üzerine doğru süzülen uzun kurdele kuyrukları (Koordinatları aşağı uzattık)
+    draw.line([(center_x - 30, top_y + 20), (center_x - 150, top_y + 400), (center_x - 100, top_y + 800)], fill=color, width=35)
+    draw.line([(center_x + 30, top_y + 20), (center_x + 150, top_y + 400), (center_x + 180, top_y + 800)], fill=color, width=35)
 
 def create_coquette_christmas_design():
     width = 4500
@@ -48,7 +46,7 @@ def create_coquette_christmas_design():
     silver_chrome = (216, 226, 220, 255) # #D8E2DC
     sparkle_color = (255, 255, 255, 240)
     
-    print("Mükemmelleştirilmiş Pink Coquette Disko Topu tasarımı üretiliyor...")
+    print("Kurdeleleri uzatılmış kusursuz Pink Coquette tasarımı üretiliyor...")
     
     center_x = width // 2
     center_y = height // 2 + 200
@@ -74,8 +72,8 @@ def create_coquette_christmas_design():
                    (center_x + int(math.sqrt(max(0, radius**2 - (y - center_y)**2))), y)], 
                   fill=(170, 190, 185, 220), width=12)
 
-    # 2. Coquette Kurdele (Disko topunun tam üstüne konumlandırıldı)
-    bow_top_y = center_y - radius - 150
+    # 2. Coquette Kurdele (Disko topunun üstünde ve uzun kuyruklarıyla)
+    bow_top_y = center_y - radius - 120
     draw_coquette_bow(draw, center_x, bow_top_y, bow_width=700, bow_height=300, color=baby_pink)
     
     # 3. Çevresine Parıltı Efektleri
@@ -95,9 +93,9 @@ def create_coquette_christmas_design():
     output_dir = "output"
     os.makedirs(output_dir, exist_ok=True)
     
-    file_path = os.path.join(output_dir, "coquette_disco_bow_final.png")
+    file_path = os.path.join(output_dir, "coquette_disco_bow_perfect.png")
     img.save(file_path, "PNG", dpi=(300, 300))
-    print(f"Final tasarım başarıyla kaydedildi: {file_path}")
+    print(f"Mükemmelleştirilmiş tasarım başarıyla kaydedildi: {file_path}")
 
 if __name__ == "__main__":
     create_coquette_christmas_design()
