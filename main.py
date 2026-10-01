@@ -1,7 +1,7 @@
 import os
 from PIL import Image, ImageDraw, ImageFont
 
-def create_guaranteed_pink_typography():
+def create_coquette_design():
     width = 4500
     height = 5400
     
@@ -9,79 +9,96 @@ def create_guaranteed_pink_typography():
     img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     
-    # Renk Paleti (Canlı ve net pembe tonları)
-    deep_pink = (219, 112, 147, 255)      # Ana pembe
-    accent_shadow = (180, 70, 100, 255)   # Gölge
-    soft_glow = (255, 192, 203, 220)      # Arka plan yumuşak zemin
-    sparkle_white = (255, 255, 255, 255)  # Yıldızlar
+    # Zarif Coquette Renk Paleti
+    pink_bg = (255, 230, 238, 220)       # Yumuşak pudra pembe kutu arka planı
+    pink_border = (245, 150, 175, 255)   # Şık ince pembe çerçeve
+    text_color = (190, 60, 95, 255)      # Derin lüks gül kurusu yazı rengi
+    sparkle_color = (255, 255, 255, 255) # Beyaz ışıltılar
     
-    print("Garantili pembe tipografi tasarımı oluşturuluyor...")
+    print("Profesyonel coquette tasarımı oluşturuluyor...")
     
     center_x = width // 2
     center_y = height // 2
     
-    # Font güvenli yükleme (Sistemde font bulamazsa varsayılanı güvenle ölçeklendirir)
+    # Güvenli font seçimi (Sistem fontlarından en kalın ve modern olanı seçer)
     font = None
-    try:
-        # Standart Linux font yolları
-        for path in [
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-            "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"
-        ]:
-            if os.path.exists(path):
-                font = ImageFont.truetype(path, 320)
+    for path in [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"
+    ]:
+        if os.path.exists(path):
+            try:
+                font = ImageFont.truetype(path, 280)
                 break
-    except Exception:
-        pass
-        
+            except Exception:
+                continue
     if font is None:
         font = ImageFont.load_default()
 
+    # 1. Şık ve geniş arka plan rozetleri (Kutuları)
+    # Üst Kutu (Merry)
+    draw.rounded_rectangle(
+        [center_x - 1400, center_y - 550, center_x + 1400, center_y - 200],
+        radius=70, fill=pink_bg, outline=pink_border, width=12
+    )
+    # Alt Kutu (Christmas)
+    draw.rounded_rectangle(
+        [center_x - 1700, center_y - 50, center_x + 1700, center_y + 300],
+        radius=70, fill=pink_bg, outline=pink_border, width=12
+    )
+
+    # 2. Metinlerin Kusursuz Yerleşimi (bbox ile tam ortalama)
     line1 = "MERRY"
     line2 = "CHRISTMAS"
     
-    # Estetik arkalık bantlar (Yazıların net okunması ve Etsy şıklığı için)
-    draw.rounded_rectangle(
-        [center_x - 1600, center_y - 600, center_x + 1600, center_y - 180],
-        radius=60, fill=(255, 240, 245, 210), outline=soft_glow, width=15
-    )
-    draw.rounded_rectangle(
-        [center_x - 1800, center_y - 50, center_x + 1800, center_y + 370],
-        radius=60, fill=(255, 240, 245, 210), outline=soft_glow, width=15
-    )
+    # Metin 1 Ölçümü ve Çizimi
+    bbox1 = font.getbbox(line1)
+    w1 = bbox1[2] - bbox1[0]
+    h1 = bbox1[3] - bbox1[1]
+    x1 = center_x - (w1 // 2)
+    y1 = (center_y - 375) - (h1 // 2)
+    draw.text((x1, y1), line1, fill=text_color, font=font)
 
-    # Sanatsal kıvrım hatları (Swash detayları)
-    draw.arc([center_x - 1400, center_y - 520, center_x - 1000, center_y - 260], start=20, end=200, fill=deep_pink, width=20)
-    draw.arc([center_x + 1000, center_y - 520, center_x + 1400, center_y - 260], start=340, end=160, fill=deep_pink, width=20)
-    draw.arc([center_x - 1600, center_y + 20, center_x - 1200, center_y + 300], start=30, end=210, fill=deep_pink, width=20)
-    draw.arc([center_x + 1200, center_y + 20, center_x + 1600, center_y + 300], start=330, end=140, fill=deep_pink, width=20)
+    # Metin 2 İçin Daha Büyük Font Denemesi (Christmas için)
+    font_large = font
+    try:
+        for path in [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+        ]:
+            if os.path.exists(path):
+                font_large = ImageFont.truetype(path, 340)
+                break
+    except Exception:
+        pass
 
-    # Metinlerin kusursuz ortalanarak çizilmesi
-    # MERRY
-    draw.text((center_x - 520 + 10, center_y - 440 + 10), line1, fill=accent_shadow, font=font)
-    draw.text((center_x - 520, center_y - 440), line1, fill=deep_pink, font=font)
-    
-    # CHRISTMAS
-    draw.text((center_x - 980 + 10, center_y + 20 + 10), line2, fill=accent_shadow, font=font)
-    draw.text((center_x - 980, center_y + 20), line2, fill=deep_pink, font=font)
+    bbox2 = font_large.getbbox(line2)
+    w2 = bbox2[2] - bbox2[0]
+    h2 = bbox2[3] - bbox2[1]
+    x2 = center_x - (w2 // 2)
+    y2 = (center_y + 125) - (h2 // 2)
+    draw.text((x2, y2), line2, fill=text_color, font=font_large)
 
-    # Etraftaki parıltılı yıldızlar
-    sparkles = [
-        (center_x - 1300, center_y - 750, 90),
-        (center_x + 1350, center_y - 700, 100),
-        (center_x - 1500, center_y + 250, 80),
-        (center_x + 1450, center_y + 300, 90),
-        (center_x - 1100, center_y + 700, 70),
-        (center_x + 1100, center_y + 650, 75)
+    # 3. Etraftaki Estetik Parlayan Yıldız Detayları
+    def draw_star(d, sx, sy, size):
+        d.polygon([
+            (sx, sy - size), (sx + size//4, sy - size//4),
+            (sx + size, sy), (sx + size//4, sy + size//4),
+            (sx, sy + size), (sx - size//4, sy + size//4),
+            (sx - size, sy), (sx - size//4, sy - size//4)
+        ], fill=sparkle_color)
+
+    stars = [
+        (center_x - 1200, center_y - 700, 90),
+        (center_x + 1250, center_y - 650, 110),
+        (center_x - 1500, center_y + 150, 80),
+        (center_x + 1450, center_y + 200, 100),
+        (center_x - 900, center_y + 600, 70),
+        (center_x + 900, center_y + 550, 75)
     ]
-    for sx, sy, ssize in sparkles:
-        draw.polygon([
-            (sx, sy - ssize), (sx + ssize//3, sy), (sx + ssize, sy), 
-            (sx + ssize//3, sy + ssize//3), (sx, sy + ssize), (sx - ssize//3, sy + ssize//3), 
-            (sx - ssize, sy), (sx - ssize//3, sy)
-        ], fill=sparkle_white)
-        draw.ellipse([sx - ssize//3, sy - ssize//3, sx + ssize//3, sy + ssize//3], fill=soft_glow)
+    for sx, sy, ssize in stars:
+        draw_star(draw, sx, sy, ssize)
 
     # Çıktı Kaydı
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -90,7 +107,7 @@ def create_guaranteed_pink_typography():
     
     file_path = os.path.join(output_dir, "pink_christmas_typography.png")
     img.save(file_path, "PNG", dpi=(300, 300))
-    print(f"Garantili pembe tipografi başarıyla kaydedildi: {file_path}")
+    print(f"Temiz coquette tasarımı başarıyla kaydedildi: {file_path}")
 
 if __name__ == "__main__":
-    create_guaranteed_pink_typography()
+    create_coquette_design()
