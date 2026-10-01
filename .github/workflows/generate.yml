@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # GitHub Actions'ın repona dosya yükleyebilmesi için yetki verir
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -24,6 +26,14 @@ jobs:
 
     - name: Run design generator
       run: python main.py
+
+    - name: Commit and Push Generated Image
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add output/
+        git commit -m "Auto-generate pink typography image" || exit 0
+        git push
 
     - name: Upload generated designs
       uses: actions/upload-artifact@v4
