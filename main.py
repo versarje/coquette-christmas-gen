@@ -1,7 +1,10 @@
 import asyncio
 import os
+import textwrap
 import edge_tts
-from moviepy import ImageClip, AudioFileClip, concatenate_videoclips, TextClip, CompositeVideoClip
+from PIL import Image, ImageDraw, ImageFont
+import numpy as np
+from moviepy import ImageClip, AudioFileClip, concatenate_videoclips, CompositeVideoClip
 
 TEXT_CONTENT = (
     "Mentioned in sacred texts across multiple major religions. "
@@ -16,7 +19,7 @@ SUBTITLE_FILE = "subtitles.srt"
 OUTPUT_FILE = "output.mp4"
 
 async def generate_audio_and_subtitles():
-    print("Generating voiceover and subtitles...")
+    print("Generating voiceover and synchronized subtitles...")
     communicate = edge_tts.Communicate(TEXT_CONTENT, "en-US-AndrewNeural")
     
     submaker = edge_tts.SubMaker()
@@ -62,19 +65,49 @@ def parse_srt(file_path):
                 start_sec = time_to_seconds(start_str)
                 end_sec = time_to_seconds(end_str)
                 
-                # Çok kısa parçaları birleştirmek veya minimum süre vermek için
                 subtitles.append({
                     "start": start_sec,
                     "end": end_sec,
                     "text": text_line
                 })
-            except Exception as e:
+            except Exception:
                 continue
             
     return subtitles
 
+def create_subtitle_image(text, font_path, font_size=45, max_width=950):
+    try:
+        font = ImageFont.truetype(font_path, font_size)
+    except Exception:
+        font = ImageFont.load_default()
+
+    wrapped_lines = textwrap.wrap(text, width=32)
+    if not wrapped_lines:
+        wrapped_lines = [text]
+
+    line_height = font_size + 12
+    padding_y = 20
+    padding_x = 30
+    
+    total_height = len(wrapped_lines) * line_height + (padding_y * 2)
+    total_width = max_width
+
+    img = Image.new("RGBA", (total_width, total_height), (0, 0, 0, 180))
+    draw = ImageDraw.Draw(img)
+
+    y_text = padding_y
+    for line in wrapped_lines:
+        bbox = draw.textbbox((0, 0), line, font=font)
+        w = bbox[2] - bbox[0]
+        x_text = (total_width - w) / 2
+        
+        draw.text((x_text, y_text), line, font=font, fill=(255, 215, 0, 255))
+        y_text += line_height
+
+    return np.array(img)
+
 def create_video():
-    print("Creating video with visible golden subtitles...")
+    print("Creating video with zoom effect and golden subtitles...")
     
     if not os.path.exists(AUDIO_FILE):
         raise FileNotFoundError(f"{AUDIO_FILE} bulunamadı!")
@@ -87,7 +120,6 @@ def create_video():
         "IMG_2048.jpeg",
         "IMG_2049.webp",
         "IMG_2050.jpeg",
-        "IMG_2050.jpeg", 
         "IMG_2051.jpeg"
     ]
     
@@ -99,38 +131,30 @@ def create_video():
     
     image_clips = []
     for img in image_paths:
+        # Her görsele 1080p sabitlemenin ardından zamanla hafifçe büyüme (zoom-in) efekti ekliyoruz
         clip = (ImageClip(img)
                 .with_duration(duration_per_image)
-                .resized(width=1080))
+                .resized(width=1080)
+                .resized(lambda t: 1.0 + 0.07 * (t / duration_per_image)))
         image_clips.append(clip)
     
     video_sequence = concatenate_videoclips(image_clips, method="compose")
     
     font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
     if not os.path.exists(font_path):
-        font_path = "Arial"
+        font_path = "arial.ttf"
 
     subs = parse_srt(SUBTITLE_FILE)
     
     subtitle_clips = []
     for sub in subs:
         start_time = sub["start"]
-        duration = max(1.0, sub["end"] - start_time) # Altyazıların ekranda rahat okunması için min 1 saniye süre
+        duration = max(1.0, sub["end"] - start_time)
         text = sub["text"]
         
-        # Yazı rengi altın sarısı (gold), arkasında net okunabilirlik için siyah şerit kutu (bg_color)
-        txt_clip = (TextClip(text=text,
-                             font=font_path,
-                             font_size=50,
-                             color='gold',
-                             bg_color='black',  # Şeffaflık yerine net siyah kutu ile garanti görünürlük
-                             margin_top=15,
-                             margin_bottom=15,
-                             margin_left=25,
-                             margin_right=25,
-                             method='caption',
-                             size=(950, None),
-                             text_align='center')
+        sub_img_array = create_subtitle_image(text, font_path)
+        
+        txt_clip = (ImageClip(sub_img_array)
                     .with_start(start_time)
                     .with_duration(duration)
                     .with_position(('center', 1350)))
