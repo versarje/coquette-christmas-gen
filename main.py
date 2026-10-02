@@ -22,6 +22,9 @@ async def generate_audio():
 def create_video():
     print("Creating video with resized images, male voice, and subtitles...")
     
+    if not os.path.exists(AUDIO_FILE):
+        raise FileNotFoundError(f"{AUDIO_FILE} oluşturulamadı!")
+
     audio_clip = AudioFileClip(AUDIO_FILE)
     total_duration = audio_clip.duration
     
@@ -49,9 +52,13 @@ def create_video():
     
     video_sequence = concatenate_videoclips(image_clips, method="compose")
     
-    # Linux sunucularda kesin olarak çalışan DejaVu-Sans-Bold fontuna geçildi
+    # Ubuntu font yolu
+    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+    if not os.path.exists(font_path):
+        font_path = "Arial" # Fallback
+    
     txt_clip = (TextClip(text=TEXT_CONTENT,
-                         font="DejaVu-Sans-Bold",
+                         font=font_path,
                          font_size=60,
                          color='white',
                          stroke_color='black',
