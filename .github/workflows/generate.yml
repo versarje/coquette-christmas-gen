@@ -1,7 +1,7 @@
 name: Generate Shorts Video
 
 on:
-  workflow_dispatch: # Manuel olarak GitHub panelinden tetiklenebilir
+  workflow_dispatch:
 
 jobs:
   build:
@@ -16,10 +16,10 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Install system dependencies (FFmpeg)
+    - name: Install system dependencies (FFmpeg, ImageMagick & Fonts)
       run: |
         sudo apt-get update
-        sudo apt-get install -y ffmpeg
+        sudo apt-get install -y ffmpeg imagemagick fonts-dejavu-core
 
     - name: Install Python dependencies
       run: |
