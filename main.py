@@ -20,7 +20,7 @@ SUBTITLE_FILE = "subtitles.srt"
 OUTPUT_FILE = "output.mp4"
 
 async def generate_audio_and_subtitles():
-    print("Generating voiceover and synchronized subtitles...")
+    print("Generating voiceover and synchronized subtitles via Edge-TTS SubMaker...")
     communicate = edge_tts.Communicate(TEXT_CONTENT, "en-US-AndrewNeural")
     
     submaker = edge_tts.SubMaker()
@@ -32,13 +32,18 @@ async def generate_audio_and_subtitles():
             elif chunk["type"] == "WordBoundary":
                 submaker.feed(chunk)
                 
+    srt_content = submaker.get_srt()
+    if not srt_content.strip():
+        raise RuntimeError("HATA: SubMaker altyazı verisi üretemedi!")
+
     with open(SUBTITLE_FILE, "w", encoding="utf-8") as f:
-        f.write(submaker.get_srt())
+        f.write(srt_content)
+    print("Subtitles successfully generated.")
 
 def parse_srt(file_path):
     subtitles = []
     if not os.path.exists(file_path):
-        return subtitles
+        raise FileNotFoundError(f"HATA: {file_path} dosyası bulunamadı!")
         
     with open(file_path, "r", encoding="utf-8") as f:
         content = f.read().strip().split("\n\n")
@@ -73,6 +78,9 @@ def parse_srt(file_path):
                 })
             except Exception:
                 continue
+                
+    if not subtitles:
+        raise ValueError("HATA: SRT dosyası okundu ancak geçerli altyazı satırı bulunamadı!")
             
     return subtitles
 
@@ -111,7 +119,8 @@ def create_subtitle_image(text, font_path, font_size=42, max_width=950):
     total_height = len(wrapped_lines) * line_height + (padding_y * 2)
     total_width = max_width
 
-    img = Image.new("RGB", (total_width, total_height), (0, 0, 0))
+    # Yarı saydam siyah arka plan (RGBA)
+    img = Image.new("RGBA", (total_width, total_height), (0, 0, 0, 160))
     draw = ImageDraw.Draw(img)
 
     y_text = padding_y
@@ -124,13 +133,14 @@ def create_subtitle_image(text, font_path, font_size=42, max_width=950):
             
         x_text = (total_width - w) / 2
         
-        draw.text((x_text, y_text), line, font=font, fill=(255, 215, 0))
+        # Altın sarısı harfler (#FFD700)
+        draw.text((x_text, y_text), line, font=font, fill=(255, 215, 0, 255))
         y_text += line_height
 
     return np.array(img)
 
 def create_video():
-    print("Creating video with subtitles forced to the top layer...")
+    print("Creating video with synchronized subtitles and zoom effect...")
     
     if not os.path.exists(AUDIO_FILE):
         raise FileNotFoundError(f"{AUDIO_FILE} bulunamadı!")
@@ -182,7 +192,6 @@ def create_video():
         
         subtitle_clips.append(txt_clip)
 
-    # KATMAN SIRALAMASI: Video arka planda, altyazılar (subtitle_clips) ise kesinlikle en üst katmanda yer alacak şekilde birleştiriliyor.
     final_video = CompositeVideoClip([video_sequence] + subtitle_clips).with_audio(audio_clip)
     
     final_video.write_videofile(
