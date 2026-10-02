@@ -36,30 +36,30 @@ def get_best_font():
     all_ttfs = glob.glob("/usr/share/fonts/**/*.ttf", recursive=True)
     return all_ttfs[0] if all_ttfs else None
 
-def create_text_image(text, font_path, font_size=50, text_color=(255, 215, 0), max_width=950):
+def create_text_image(text, font_path, font_size=38, text_color=(255, 215, 0), max_width=900):
     try:
         font = ImageFont.truetype(font_path, font_size) if font_path and os.path.exists(font_path) else ImageFont.load_default()
     except Exception:
         font = ImageFont.load_default()
 
-    wrapped_lines = textwrap.wrap(text, width=25)
+    # width değerini artırarak kelimelerin yatayda daha geniş durmasını ve en fazla 2 satıra sığmasını sağlıyoruz
+    wrapped_lines = textwrap.wrap(text, width=38)
     if not wrapped_lines:
         wrapped_lines = [text]
 
-    line_height = font_size + 15
-    padding_y = 25
-    padding_x = 30
+    line_height = font_size + 12
+    padding_y = 20
     
     total_height = len(wrapped_lines) * line_height + (padding_y * 2)
     
-    # Yarı saydam siyah arka plan kutusu (RGBA formatında, son değer alfa/saydamlık 160)
+    # Yarı saydam siyah arka plan kutusu
     img = Image.new("RGBA", (max_width, total_height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     
-    # Kutuyu çiz (köşeleri hafif yumuşatılmış veya direkt dikdörtgen)
+    # Şık, köşeleri yumuşatılmış yarı saydam kutu
     draw.rounded_rectangle(
         [(0, 0), (max_width, total_height)], 
-        radius=15, 
+        radius=12, 
         fill=(0, 0, 0, 160)
     )
 
@@ -73,7 +73,7 @@ def create_text_image(text, font_path, font_size=50, text_color=(255, 215, 0), m
             
         x_text = (max_width - w) / 2
         
-        # Yazı rengi ve gölgesi
+        # Gölge efekti ve ana metin (küçültülmüş yazı boyutuyla)
         draw.text((x_text + 2, y_text + 2), line, font=font, fill=(0, 0, 0, 255))
         draw.text((x_text, y_text), line, font=font, fill=(text_color[0], text_color[1], text_color[2], 255))
         y_text += line_height
@@ -114,7 +114,8 @@ def create_video():
         duration = (len(sentence) / total_chars) * total_duration
         duration = max(duration, 1.5) # Minimum süre
         
-        sub_img_array = create_text_image(sentence, font_path, font_size=50)
+        # Yazı boyutunu 38 olarak ayarladık
+        sub_img_array = create_text_image(sentence, font_path, font_size=38)
         
         sub_clip = (ImageClip(sub_img_array)
                     .with_start(current_time)
