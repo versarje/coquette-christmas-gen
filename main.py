@@ -31,10 +31,8 @@ async def generate_audio():
 
 def generate_proportional_srt(text, audio_duration, srt_path):
     print("Generating synchronized subtitles based on audio duration...")
-    # Cümlelere böl
     sentences = [s.strip() for s in text.replace("?", ".").replace("!", ".").split(".") if s.strip()]
     
-    # Toplam karakter sayısını hesapla
     total_chars = sum(len(s) for s in sentences)
     if total_chars == 0:
         total_chars = len(text)
@@ -44,9 +42,8 @@ def generate_proportional_srt(text, audio_duration, srt_path):
     current_time = 0.0
 
     for i, sentence in enumerate(sentences):
-        # Karakter uzunluğuna göre süre paylaştır
         weight = len(sentence) / total_chars
-        duration = max(2.0, audio_duration * weight) # Her cümle en az 2 saniye kalsın
+        duration = max(2.0, audio_duration * weight)
         
         start_time = current_time
         end_time = min(audio_duration, start_time + duration)
@@ -58,7 +55,6 @@ def generate_proportional_srt(text, audio_duration, srt_path):
         })
         current_time = end_time
 
-    # SRT içeriğini oluştur
     srt_lines = []
     for idx, sub in enumerate(subtitles, 1):
         def format_time(sec):
@@ -153,7 +149,6 @@ def create_subtitle_image(text, font_path, font_size=42, max_width=950):
     total_height = len(wrapped_lines) * line_height + (padding_y * 2)
     total_width = max_width
 
-    # Yarı saydam siyah arka plan (RGBA)
     img = Image.new("RGBA", (total_width, total_height), (0, 0, 0, 160))
     draw = ImageDraw.Draw(img)
 
@@ -167,8 +162,7 @@ def create_subtitle_image(text, font_path, font_size=42, max_width=950):
             
         x_text = (total_width - w) / 2
         
-        # Altın sarısı harfler (#FFD700)
--        draw.text((x_text, y_text), line, font=font, fill=(255, 215, 0, 255))
+        draw.text((x_text, y_text), line, font=font, fill=(255, 215, 0, 255))
         y_text += line_height
 
     return np.array(img)
@@ -182,7 +176,6 @@ def create_video():
     audio_clip = AudioFileClip(AUDIO_FILE)
     total_duration = audio_clip.duration
     
-    # Ses süresine göre kusursuz SRT dosyasını otomatik oluştur
     generate_proportional_srt(TEXT_CONTENT, total_duration, SUBTITLE_FILE)
     
     image_paths = [
