@@ -1,5 +1,6 @@
 import asyncio
 import os
+import glob
 import textwrap
 import edge_tts
 from PIL import Image, ImageDraw, ImageFont
@@ -75,39 +76,65 @@ def parse_srt(file_path):
             
     return subtitles
 
-def create_subtitle_image(text, font_path, font_size=45, max_width=950):
+def get_best_font():
+    """Sistemdeki mevcut fontları tarar ve en uygun olanı seçer"""
+    candidates = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"
+    ]
+    for font in candidates:
+        if os.path.exists(font):
+            return font
+            
+    # Hiçbiri yoksa sistemdeki herhangi bir ttf bul
+    all_ttfs = glob.glob("/usr/share/fonts/**/*.ttf", recursive=True)
+    if all_ttfs:
+        return all_ttfs[0]
+        
+    return None
+
+def create_subtitle_image(text, font_path, font_size=50, max_width=950):
     try:
-        font = ImageFont.truetype(font_path, font_size)
+        if font_path and os.path.exists(font_path):
+            font = ImageFont.truetype(font_path, font_size)
+        else:
+            font = ImageFont.load_default()
     except Exception:
         font = ImageFont.load_default()
 
-    wrapped_lines = textwrap.wrap(text, width=32)
+    wrapped_lines = textwrap.wrap(text, width=30)
     if not wrapped_lines:
         wrapped_lines = [text]
 
-    line_height = font_size + 12
+    line_height = font_size + 15
     padding_y = 20
-    padding_x = 30
     
     total_height = len(wrapped_lines) * line_height + (padding_y * 2)
     total_width = max_width
 
-    img = Image.new("RGBA", (total_width, total_height), (0, 0, 0, 180))
+    # RGB modunda net siyah arka plan (Görünmeme riskini sıfırlar)
+    img = Image.new("RGB", (total_width, total_height), (0, 0, 0))
     draw = ImageDraw.Draw(img)
 
     y_text = padding_y
     for line in wrapped_lines:
-        bbox = draw.textbbox((0, 0), line, font=font)
-        w = bbox[2] - bbox[0]
+        try:
+            bbox = draw.textbbox((0, 0), line, font=font)
+            w = bbox[2] - bbox[0]
+        except Exception:
+            w = len(line) * (font_size / 2)
+            
         x_text = (total_width - w) / 2
         
-        draw.text((x_text, y_text), line, font=font, fill=(255, 215, 0, 255))
+        # Altın sarısı renk (#FFD700)
+        draw.text((x_text, y_text), line, font=font, fill=(255, 215, 0))
         y_text += line_height
 
     return np.array(img)
 
 def create_video():
-    print("Creating video with zoom effect and golden subtitles...")
+    print("Creating video with guaranteed visible subtitles and zoom effect...")
     
     if not os.path.exists(AUDIO_FILE):
         raise FileNotFoundError(f"{AUDIO_FILE} bulunamadı!")
@@ -131,7 +158,6 @@ def create_video():
     
     image_clips = []
     for img in image_paths:
-        # Her görsele 1080p sabitlemenin ardından zamanla hafifçe büyüme (zoom-in) efekti ekliyoruz
         clip = (ImageClip(img)
                 .with_duration(duration_per_image)
                 .resized(width=1080)
@@ -140,9 +166,8 @@ def create_video():
     
     video_sequence = concatenate_videoclips(image_clips, method="compose")
     
-    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-    if not os.path.exists(font_path):
-        font_path = "arial.ttf"
+    font_path = get_best_font()
+    print(f"Selected font path: {font_path}")
 
     subs = parse_srt(SUBTITLE_FILE)
     
