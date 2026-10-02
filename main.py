@@ -1,6 +1,5 @@
 import asyncio
 import os
-import json
 import edge_tts
 from moviepy import ImageClip, AudioFileClip, concatenate_videoclips, TextClip, CompositeVideoClip
 
@@ -13,11 +12,11 @@ TEXT_CONTENT = (
 )
 
 AUDIO_FILE = "voiceover.mp3"
+SUBTITLE_FILE = "subtitles.srt"
 OUTPUT_FILE = "output.mp4"
-TIMESTAMPS_FILE = "timestamps.json"
 
-async def generate_audio_and_timestamps():
-    print("Generating voiceover and word-level timestamps...")
+async def generate_audio_and_subtitles():
+    print("Generating voiceover and synchronized subtitles...")
     communicate = edge_tts.Communicate(TEXT_CONTENT, "en-US-AndrewNeural")
     
     submaker = edge_tts.SubMaker()
@@ -29,19 +28,46 @@ async def generate_audio_and_timestamps():
             elif chunk["type"] == "WordBoundary":
                 submaker.feed(chunk)
                 
-    words_data = []
-    for start, end, text in submaker.offset:
-        words_data.append({
-            "start": start / 10000000,
-            "end": end / 10000000,
-            "word": text
-        })
+    # edge-tts'in yerleşik SRT oluşturucusunu kullanarak altyazı dosyasını kaydediyoruz
+    with open(SUBTITLE_FILE, "w", encoding="utf-8") as f:
+        f.write(submaker.generate_srt())
+
+def parse_srt(file_path):
+    """SRT dosyasını okuyup zaman aralıkları ve metinleri liste olarak döndürür"""
+    subtitles = []
+    if not os.path.exists(file_path):
+        return subtitles
         
-    with open(TIMESTAMPS_FILE, "w", encoding="utf-8") as f:
-        json.dump(words_data, f, ensure_ascii=False, indent=2)
+    with open(file_path, "r", encoding="utf-8") as f:
+        content = f.read().strip().split("\n\n")
+        
+    for block in content:
+        lines = block.split("\n")
+        if len(lines) >= 3:
+            time_line = lines[1]
+            text_line = " ".join(lines[2:])
+            
+            # Zaman formatı: 00:00:01,234 --> 00:00:04,567
+            start_str, end_str = time_line.split(" --> ")
+            
+            def time_to_seconds(t_str):
+                h, m, s_ms = t_str.split(":")
+                s, ms = s_ms.split(",")
+                return int(h) * 3600 + int(m) * 60 + int(s) + int(ms) / 1000
+                
+            start_sec = time_to_seconds(start_str)
+            end_sec = time_to_seconds(end_str)
+            
+            subtitles.append({
+                "start": start_sec,
+                "end": end_sec,
+                "text": text_line
+            })
+            
+    return subtitles
 
 def create_video():
-    print("Creating video with golden subtitles, background boxes, and male voice...")
+    print("Creating video with synchronized golden subtitles and background boxes...")
     
     if not os.path.exists(AUDIO_FILE):
         raise FileNotFoundError(f"{AUDIO_FILE} bulunamadı!")
@@ -77,23 +103,17 @@ def create_video():
     if not os.path.exists(font_path):
         font_path = "Arial"
 
-    with open(TIMESTAMPS_FILE, "r", encoding="utf-8") as f:
-        words_data = json.load(f)
-
+    # SRT altyazılarını parse et
+    subs = parse_srt(SUBTITLE_FILE)
+    
     subtitle_clips = []
-    chunk_size = 4
-    for i in range(0, len(words_data), chunk_size):
-        chunk = words_data[i:i+chunk_size]
-        if not chunk:
-            continue
-            
-        chunk_text = " ".join([w["word"] for w in chunk])
-        start_time = chunk[0]["start"]
-        end_time = chunk[-1]["end"]
-        duration = max(0.5, end_time - start_time + 0.3) 
+    for sub in subs:
+        start_time = sub["start"]
+        duration = max(0.5, sub["end"] - start_time)
+        text = sub["text"]
         
-        # color='gold' (altın sarısı) olarak ayarlandı
-        txt_clip = (TextClip(text=chunk_text,
+        # Altın sarısı renk ve yarı saydam siyah kutu
+        txt_clip = (TextClip(text=text,
                              font=font_path,
                              font_size=55,
                              color='gold',
@@ -124,5 +144,5 @@ def create_video():
     print(f"Video successfully created: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
-    asyncio.run(generate_audio_and_timestamps())
+    asyncio.run(generate_audio_and_subtitles())
     create_video()
