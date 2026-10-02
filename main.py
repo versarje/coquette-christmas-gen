@@ -1,6 +1,6 @@
 import asyncio
 import os
-from edge_ts import Communicate
+from edge_tts import Communicate
 from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
 
 TEXT_CONTENT = (
@@ -20,28 +20,29 @@ async def generate_audio():
     await communicate.save(AUDIO_FILE)
 
 def create_video():
-    print("Creating video with 5 images...")
+    print("Creating video with 6 images from the root directory...")
     
     audio_clip = AudioFileClip(AUDIO_FILE)
     total_duration = audio_clip.duration
     
-    # 5 görselin dosya yolları (örneğin assets/1.jpg, assets/2.jpg ... assets/5.jpg)
+    # Ana dizine yüklediğin görsellerin tam dosya adları ve uzantıları
     image_paths = [
-        "assets/1.jpg",
-        "assets/2.jpg",
-        "assets/3.jpg",
-        "assets/4.jpg",
-        "assets/5.jpg"
+        "IMG_2047.jpeg",
+        "IMG_2048.jpeg",
+        "IMG_2049.webp",
+        "IMG_2050.jpeg",
+        "IMG_2050.jpeg", # Eğer biri farklıysa burayı güncelleyebilirsin
+        "IMG_2051.jpeg"
     ]
     
     for img in image_paths:
         if not os.path.exists(img):
-            raise FileNotFoundError(f"{img} bulunamadı! Lütfen tüm görselleri assets klasörüne ekle.")
+            raise FileNotFoundError(f"{img} ana dizinde bulunamadı! Lütfen dosya adını kontrol et.")
 
-    # Her bir görsele düşen süre (Toplam süreyi 5'e bölüyoruz)
+    # Toplam süreyi 6 görsele eşit olarak paylaştırıyoruz
     duration_per_image = total_duration / len(image_paths)
     
-    # Görsel kliplerini oluştur ve sürelerini ata
+    # Görsel kliplerini oluşturuyoruz (webp ve jpeg formatlarını MoviePy destekler)
     image_clips = [ImageClip(img).set_duration(duration_per_image) for img in image_paths]
     
     # Görselleri arka arkaya birleştir
@@ -50,7 +51,7 @@ def create_video():
     # Ses klibini videoya ekle
     final_video = video_sequence.set_audio(audio_clip)
     
-    # Videoyu kaydet (1080x1920 dikey Shorts formatı)
+    # Dikey Shorts formatında kaydet
     final_video.write_videofile(
         OUTPUT_FILE,
         fps=24,
