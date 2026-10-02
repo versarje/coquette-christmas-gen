@@ -5,23 +5,49 @@ import textwrap
 import edge_tts
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
-from moviepy import ColorClip, AudioFileClip, ImageClip, concatenate_videoclips, CompositeVideoClip
+from moviepy import ColorClip, AudioFileClip, ImageClip, concatenate_videoclips, CompositeVideoClip, VideoClip
 
-TEXT_CONTENT = "deneme basardi"
-SUBTITLE_TEXT = "deneme basardi"
+TEXT_CONTENT = (
+    "Mentioned in sacred texts across multiple major religions. "
+    "High up on Mount Ararat in Turkey, satellite images captured a strange, boat-shaped anomaly. "
+    "Hidden deep beneath thick layers of ice and mud, untouched for centuries. "
+    "Roughly 150 meters long, matching the exact dimensions of history's most famous vessel. "
+    "Is it just a bizarre coincidence of nature, or the greatest secret frozen right there?"
+)
 
 AUDIO_FILE = "voiceover.mp3"
 OUTPUT_FILE = "output.mp4"
 
-async def generate_audio():
-    print("Generating voiceover...")
+# Kelime zamanlamalarını tutacağımız liste
+word_timestamps = []
+
+async def generate_audio_and_timestamps():
+    global word_timestamps
+    print("Generating voiceover and word timestamps...")
+    
     communicate = edge_tts.Communicate(TEXT_CONTENT, "en-US-AndrewNeural")
     
+    audio_data = bytearray()
+    word_timestamps = []
+    
+    async for chunk in communicate.stream():
+        if chunk["type"] == "audio":
+            audio_data.extend(chunk["data"])
+        elif chunk["type"] == "WordBoundary":
+            # edge-tts offset ve duration değerlerini 100ns cinsinden verir (saniyeye çevirmek için / 10_000_000)
+            start_time = chunk["offset"] / 10_000_000
+            duration = chunk["duration"] / 10_000_000
+            word = chunk["text"]
+            word_timestamps.append({
+                "word": word,
+                "start": start_time,
+                "end": start_time + duration
+            })
+
     with open(AUDIO_FILE, "wb") as f:
-        async for chunk in communicate.stream():
-            if chunk["type"] == "audio":
-                f.write(chunk["data"])
-    print("Voiceover successfully generated.")
+        f.write(audio_data)
+        
+    print(f"Voiceover generated successfully. Total words tracked: {len(word_timestamps)}")
 
 def get_best_font():
     candidates = [
@@ -48,7 +74,7 @@ def create_text_image(text, font_path, font_size=55, text_color=(255, 215, 0, 25
     except Exception:
         font = ImageFont.load_default()
 
-    wrapped_lines = textwrap.wrap(text, width=25)
+    wrapped_lines = textwrap.wrap(text, width=22)
     if not wrapped_lines:
         wrapped_lines = [text]
 
@@ -77,7 +103,7 @@ def create_text_image(text, font_path, font_size=55, text_color=(255, 215, 0, 25
     return np.array(img)
 
 def create_video():
-    print("Creating video with automatic images and zoom effect...")
+    print("Creating video with synchronized word-by-word subtitles...")
     
     if not os.path.exists(AUDIO_FILE):
         raise FileNotFoundError(f"{AUDIO_FILE} bulunamadı!")
@@ -85,7 +111,7 @@ def create_video():
     audio_clip = AudioFileClip(AUDIO_FILE)
     total_duration = audio_clip.duration
     
-    # Klasördeki tüm görselleri otomatik tara ve sırala
+    # Görselleri otomatik tara ve sırala
     image_extensions = ("*.jpg", "*.jpeg", "*.png", "*.webp")
     image_paths = []
     for ext in image_extensions:
@@ -112,21 +138,45 @@ def create_video():
     font_path = get_best_font()
     print(f"Selected font path: {font_path}")
 
-    clips = [video_sequence]
+    # Kelime kelime eş zamanlı alt yazı üretimi için VideoClip tabanlı dinamik yapı
+    words = word_timestamps if word_timestamps else [{"word": TEXT_CONTENT, "start": 0, "end": total_duration}]
     
-    # Alt Yazı (Subtitle) - Videonun başından sonuna kadar alt kısımda
-    sub_img_array = create_text_image(
-        SUBTITLE_TEXT, 
-        font_path, 
-        font_size=55, 
-        text_color=(255, 215, 0, 255), 
-        bg_color=(0, 0, 0, 160)
-    )
-    sub_clip = (ImageClip(sub_img_array)
-                .with_start(0)
-                .with_duration(total_duration)
-                .with_position(('center', 1500)))
-    clips.append(sub_clip)
+    # Her 5-6 kelimede bir alt yazıyı gruplayarak ekranda akıcı görünmesini sağlayalım
+    chunk_size = 5
+    subtitle_chunks = []
+    
+    for i in range(0, len(words), chunk_size):
+        chunk_words = words[i:i + chunk_size]
+        chunk_text = " ".join([w["word"] for w in chunk_words])
+        start_t = chunk_words[0]["start"]
+        end_t = chunk_words[-1]["end"] if i + chunk_size < len(words) else total_duration
+        
+        # Son kelimenin bitişiyle bir sonraki kelimenin başlangıcına kadar süreyi uzat
+        if i + chunk_size < len(words):
+            end_t = words[i + chunk_size]["start"]
+            
+        subtitle_chunks.append({
+            "text": chunk_text,
+            "start": start_t,
+            "end": max(end_t, start_t + 0.5) # Minimum 0.5 saniye ekranda kalma garantisi
+        })
+
+    sub_clips = []
+    for sub in subtitle_chunks:
+        sub_img_array = create_text_image(
+            sub["text"], 
+            font_path, 
+            font_size=55, 
+            text_color=(255, 215, 0, 255), 
+            bg_color=(0, 0, 0, 160)
+        )
+        sub_clip = (ImageClip(sub_img_array)
+                    .with_start(sub["start"])
+                    .with_duration(sub["end"] - sub["start"])
+                    .with_position(('center', 1500)))
+        sub_clips.append(sub_clip)
+
+    clips = [video_sequence] + sub_clips
 
     final_video = CompositeVideoClip(clips).with_audio(audio_clip)
     
@@ -141,5 +191,5 @@ def create_video():
     print(f"Video successfully created: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
-    asyncio.run(generate_audio())
+    asyncio.run(generate_audio_and_timestamps())
     create_video()
