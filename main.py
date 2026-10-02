@@ -63,15 +63,14 @@ def create_video():
 
     final_video = CompositeVideoClip([video_sequence, txt_clip]).with_audio(audio_clip)
     
-        final_video.write_videofile(
+    final_video.write_videofile(
         OUTPUT_FILE,
         fps=30,
         codec="libx264",
         audio_codec="aac",
         preset="medium",
-        bitrate="5M"  # Bit hızını yükseltiyoruz
+        bitrate="5M"
     )
-
     print(f"Video successfully created: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
