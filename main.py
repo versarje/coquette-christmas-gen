@@ -41,7 +41,8 @@ def create_video():
 
     duration_per_image = total_duration / len(image_paths)
     
-    image_clips = [ImageClip(img).set_duration(duration_per_image) for img in image_paths]
+    # Güncel sürüm için .with_duration() kullanıldı
+    image_clips = [ImageClip(img).with_duration(duration_per_image) for img in image_paths]
     
     video_sequence = concatenate_videoclips(image_clips, method="compose")
     
