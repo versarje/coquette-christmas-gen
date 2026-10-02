@@ -5,18 +5,13 @@ import textwrap
 import edge_tts
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
-from moviepy import ImageClip, AudioFileClip, concatenate_videoclips, CompositeVideoClip
+from moviepy import ColorClip, AudioFileClip, ImageClip, CompositeVideoClip
 
-TEXT_CONTENT = (
-    "Mentioned in sacred texts across multiple major religions. "
-    "High up on Mount Ararat in Turkey, satellite images captured a strange, boat-shaped anomaly. "
-    "Hidden deep beneath thick layers of ice and mud, untouched for centuries. "
-    "Roughly 150 meters long, matching the exact dimensions of history's most famous vessel. "
-    "Is it just a bizarre coincidence of nature, or the greatest secret frozen right there?"
-)
+TEXT_CONTENT = "deneme basardi"
+HOOK_TEXT = "deneme"
+SUBTITLE_TEXT = "deneme basardi"
 
 AUDIO_FILE = "voiceover.mp3"
-SUBTITLE_FILE = "subtitles.srt"
 OUTPUT_FILE = "output.mp4"
 
 async def generate_audio():
@@ -28,91 +23,6 @@ async def generate_audio():
             if chunk["type"] == "audio":
                 f.write(chunk["data"])
     print("Voiceover successfully generated.")
-
-def generate_proportional_srt(text, audio_duration, srt_path):
-    print("Generating synchronized subtitles based on audio duration...")
-    sentences = [s.strip() for s in text.replace("?", ".").replace("!", ".").split(".") if s.strip()]
-    
-    total_chars = sum(len(s) for s in sentences)
-    if total_chars == 0:
-        total_chars = len(text)
-        sentences = [text]
-
-    subtitles = []
-    current_time = 0.0
-
-    for i, sentence in enumerate(sentences):
-        weight = len(sentence) / total_chars
-        duration = max(2.0, audio_duration * weight)
-        
-        start_time = current_time
-        end_time = min(audio_duration, start_time + duration)
-        
-        subtitles.append({
-            "start": start_time,
-            "end": end_time,
-            "text": sentence + "."
-        })
-        current_time = end_time
-
-    srt_lines = []
-    for idx, sub in enumerate(subtitles, 1):
-        def format_time(sec):
-            h = int(sec // 3600)
-            m = int((sec % 3600) // 60)
-            s = int(sec % 60)
-            ms = int((sec - int(sec)) * 1000)
-            return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
-
-        srt_lines.append(str(idx))
-        srt_lines.append(f"{format_time(sub['start'])} --> {format_time(sub['end'])}")
-        srt_lines.append(sub['text'])
-        srt_lines.append("")
-
-    with open(srt_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(srt_lines))
-    print("SRT subtitles successfully generated.")
-
-def parse_srt(file_path):
-    subtitles = []
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"HATA: {file_path} dosyası bulunamadı!")
-        
-    with open(file_path, "r", encoding="utf-8") as f:
-        content = f.read().strip().split("\n\n")
-        
-    for block in content:
-        lines = block.split("\n")
-        if len(lines) >= 3:
-            time_line = lines[1]
-            text_line = " ".join(lines[2:])
-            
-            if " --> " not in time_line:
-                continue
-                
-            start_str, end_str = time_line.split(" --> ")
-            
-            def time_to_seconds(t_str):
-                parts = t_str.split(":")
-                h = int(parts[0])
-                m = int(parts[1])
-                s_ms = parts[2].replace(".", ",")
-                s, ms = s_ms.split(",")
-                return h * 3600 + m * 60 + int(s) + int(ms) / 1000
-                
-            try:
-                start_sec = time_to_seconds(start_str)
-                end_sec = time_to_seconds(end_str)
-                
-                subtitles.append({
-                    "start": start_sec,
-                    "end": end_sec,
-                    "text": text_line
-                })
-            except Exception:
-                continue
-            
-    return subtitles
 
 def get_best_font():
     candidates = [
@@ -130,7 +40,7 @@ def get_best_font():
         
     return None
 
-def create_subtitle_image(text, font_path, font_size=42, max_width=950):
+def create_text_image(text, font_path, font_size=50, text_color=(255, 215, 0, 255), bg_color=(0, 0, 0, 160), max_width=950):
     try:
         if font_path and os.path.exists(font_path):
             font = ImageFont.truetype(font_path, font_size)
@@ -139,17 +49,17 @@ def create_subtitle_image(text, font_path, font_size=42, max_width=950):
     except Exception:
         font = ImageFont.load_default()
 
-    wrapped_lines = textwrap.wrap(text, width=34)
+    wrapped_lines = textwrap.wrap(text, width=25)
     if not wrapped_lines:
         wrapped_lines = [text]
 
-    line_height = font_size + 12
-    padding_y = 15
+    line_height = font_size + 15
+    padding_y = 20
     
     total_height = len(wrapped_lines) * line_height + (padding_y * 2)
     total_width = max_width
 
-    img = Image.new("RGBA", (total_width, total_height), (0, 0, 0, 160))
+    img = Image.new("RGBA", (total_width, total_height), bg_color)
     draw = ImageDraw.Draw(img)
 
     y_text = padding_y
@@ -162,13 +72,13 @@ def create_subtitle_image(text, font_path, font_size=42, max_width=950):
             
         x_text = (total_width - w) / 2
         
-        draw.text((x_text, y_text), line, font=font, fill=(255, 215, 0, 255))
+        draw.text((x_text, y_text), line, font=font, fill=text_color)
         y_text += line_height
 
     return np.array(img)
 
 def create_video():
-    print("Creating video with synchronized subtitles and zoom effect...")
+    print("Creating video with hook and subtitles...")
     
     if not os.path.exists(AUDIO_FILE):
         raise FileNotFoundError(f"{AUDIO_FILE} bulunamadı!")
@@ -176,53 +86,44 @@ def create_video():
     audio_clip = AudioFileClip(AUDIO_FILE)
     total_duration = audio_clip.duration
     
-    generate_proportional_srt(TEXT_CONTENT, total_duration, SUBTITLE_FILE)
-    
-    image_paths = [
-        "IMG_2047.jpeg",
-        "IMG_2048.jpeg",
-        "IMG_2049.webp",
-        "IMG_2050.jpeg",
-        "IMG_2051.jpeg"
-    ]
-    
-    for img in image_paths:
-        if not os.path.exists(img):
-            raise FileNotFoundError(f"{img} ana dizinde bulunamadı!")
-
-    duration_per_image = total_duration / len(image_paths)
-    
-    image_clips = []
-    for img in image_paths:
-        clip = (ImageClip(img)
-                .with_duration(duration_per_image)
-                .resized(width=1080)
-                .resized(lambda t: 1.0 + 0.07 * (t / duration_per_image)))
-        image_clips.append(clip)
-    
-    video_sequence = concatenate_videoclips(image_clips, method="compose")
+    # 1080x1920 boyutunda siyah arka plan
+    bg_clip = ColorClip(size=(1080, 1920), color=(0, 0, 0)).with_duration(total_duration)
     
     font_path = get_best_font()
     print(f"Selected font path: {font_path}")
 
-    subs = parse_srt(SUBTITLE_FILE)
+    clips = [bg_clip]
     
-    subtitle_clips = []
-    for sub in subs:
-        start_time = sub["start"]
-        duration = max(1.0, sub["end"] - start_time)
-        text = sub["text"]
-        
-        sub_img_array = create_subtitle_image(text, font_path)
-        
-        txt_clip = (ImageClip(sub_img_array)
-                    .with_start(start_time)
-                    .with_duration(duration)
-                    .with_position(('center', 1650)))
-        
-        subtitle_clips.append(txt_clip)
+    # 1. Kanca (Hook) - Videonun ilk 3 saniyesi boyunca üst-orta kısımda (kırmızımsı arka plan ile dikkat çekici)
+    hook_duration = min(3.0, total_duration)
+    hook_img_array = create_text_image(
+        HOOK_TEXT, 
+        font_path, 
+        font_size=70, 
+        text_color=(255, 255, 255, 255), 
+        bg_color=(180, 0, 0, 220)
+    )
+    hook_clip = (ImageClip(hook_img_array)
+                 .with_start(0)
+                 .with_duration(hook_duration)
+                 .with_position(('center', 600)))
+    clips.append(hook_clip)
+    
+    # 2. Alt Yazı (Subtitle) - Videonun başından sonuna kadar alt kısımda (altın sarısı renk ve yarı saydam siyah kutu ile)
+    sub_img_array = create_text_image(
+        SUBTITLE_TEXT, 
+        font_path, 
+        font_size=55, 
+        text_color=(255, 215, 0, 255), 
+        bg_color=(0, 0, 0, 160)
+    )
+    sub_clip = (ImageClip(sub_img_array)
+                .with_start(0)
+                .with_duration(total_duration)
+                .with_position(('center', 1500)))
+    clips.append(sub_clip)
 
-    final_video = CompositeVideoClip([video_sequence] + subtitle_clips).with_audio(audio_clip)
+    final_video = CompositeVideoClip(clips).with_audio(audio_clip)
     
     final_video.write_videofile(
         OUTPUT_FILE,
