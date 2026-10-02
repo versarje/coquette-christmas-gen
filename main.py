@@ -49,8 +49,9 @@ def create_video():
     
     video_sequence = concatenate_videoclips(image_clips, method="compose")
     
+    # Linux sunucularda kesin olarak çalışan DejaVu-Sans-Bold fontuna geçildi
     txt_clip = (TextClip(text=TEXT_CONTENT,
-                         font="Arial-Bold",
+                         font="DejaVu-Sans-Bold",
                          font_size=60,
                          color='white',
                          stroke_color='black',
