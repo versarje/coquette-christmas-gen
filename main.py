@@ -5,7 +5,7 @@ import textwrap
 import edge_tts
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
-from moviepy import ColorClip, AudioFileClip, ImageClip, concatenate_videoclips, CompositeVideoClip, VideoClip
+from moviepy import ColorClip, AudioFileClip, ImageClip, concatenate_videoclips, CompositeVideoClip
 
 TEXT_CONTENT = (
     "Mentioned in sacred texts across multiple major religions. "
@@ -18,7 +18,6 @@ TEXT_CONTENT = (
 AUDIO_FILE = "voiceover.mp3"
 OUTPUT_FILE = "output.mp4"
 
-# Kelime zamanlamalarını tutacağımız liste
 word_timestamps = []
 
 async def generate_audio_and_timestamps():
@@ -34,7 +33,6 @@ async def generate_audio_and_timestamps():
         if chunk["type"] == "audio":
             audio_data.extend(chunk["data"])
         elif chunk["type"] == "WordBoundary":
-            # edge-tts offset ve duration değerlerini 100ns cinsinden verir (saniyeye çevirmek için / 10_000_000)
             start_time = chunk["offset"] / 10_000_000
             duration = chunk["duration"] / 10_000_000
             word = chunk["text"]
@@ -65,7 +63,7 @@ def get_best_font():
         
     return None
 
-def create_text_image(text, font_path, font_size=55, text_color=(255, 215, 0, 255), bg_color=(0, 0, 0, 160), max_width=950):
+def create_text_image(text, font_path, font_size=55, text_color=(255, 215, 0), bg_color=(0, 0, 0), max_width=950):
     try:
         if font_path and os.path.exists(font_path):
             font = ImageFont.truetype(font_path, font_size)
@@ -74,7 +72,7 @@ def create_text_image(text, font_path, font_size=55, text_color=(255, 215, 0, 25
     except Exception:
         font = ImageFont.load_default()
 
-    wrapped_lines = textwrap.wrap(text, width=22)
+    wrapped_lines = textwrap.wrap(text, width=25)
     if not wrapped_lines:
         wrapped_lines = [text]
 
@@ -84,7 +82,7 @@ def create_text_image(text, font_path, font_size=55, text_color=(255, 215, 0, 25
     total_height = len(wrapped_lines) * line_height + (padding_y * 2)
     total_width = max_width
 
-    img = Image.new("RGBA", (total_width, total_height), bg_color)
+    img = Image.new("RGB", (total_width, total_height), bg_color)
     draw = ImageDraw.Draw(img)
 
     y_text = padding_y
@@ -103,7 +101,7 @@ def create_text_image(text, font_path, font_size=55, text_color=(255, 215, 0, 25
     return np.array(img)
 
 def create_video():
-    print("Creating video with synchronized word-by-word subtitles...")
+    print("Creating video with phrase-based synchronized subtitles...")
     
     if not os.path.exists(AUDIO_FILE):
         raise FileNotFoundError(f"{AUDIO_FILE} bulunamadı!")
@@ -111,7 +109,6 @@ def create_video():
     audio_clip = AudioFileClip(AUDIO_FILE)
     total_duration = audio_clip.duration
     
-    # Görselleri otomatik tara ve sırala
     image_extensions = ("*.jpg", "*.jpeg", "*.png", "*.webp")
     image_paths = []
     for ext in image_extensions:
@@ -138,10 +135,9 @@ def create_video():
     font_path = get_best_font()
     print(f"Selected font path: {font_path}")
 
-    # Kelime kelime eş zamanlı alt yazı üretimi için VideoClip tabanlı dinamik yapı
     words = word_timestamps if word_timestamps else [{"word": TEXT_CONTENT, "start": 0, "end": total_duration}]
     
-    # Her 5-6 kelimede bir alt yazıyı gruplayarak ekranda akıcı görünmesini sağlayalım
+    # 5'erli kelime grupları (öbekler) halinde akması için chunk_size = 5 yapıldı
     chunk_size = 5
     subtitle_chunks = []
     
@@ -149,16 +145,17 @@ def create_video():
         chunk_words = words[i:i + chunk_size]
         chunk_text = " ".join([w["word"] for w in chunk_words])
         start_t = chunk_words[0]["start"]
-        end_t = chunk_words[-1]["end"] if i + chunk_size < len(words) else total_duration
         
-        # Son kelimenin bitişiyle bir sonraki kelimenin başlangıcına kadar süreyi uzat
+        # Bir sonraki öbeğin başladığı ana kadar ekranda kalır, böylece üst üste yığılma olmaz
         if i + chunk_size < len(words):
             end_t = words[i + chunk_size]["start"]
+        else:
+            end_t = chunk_words[-1]["end"] + 0.5
             
         subtitle_chunks.append({
             "text": chunk_text,
             "start": start_t,
-            "end": max(end_t, start_t + 0.5) # Minimum 0.5 saniye ekranda kalma garantisi
+            "end": max(end_t, start_t + 0.6) # Minimum okunabilirlik süresi
         })
 
     sub_clips = []
@@ -167,13 +164,14 @@ def create_video():
             sub["text"], 
             font_path, 
             font_size=55, 
-            text_color=(255, 215, 0, 255), 
-            bg_color=(0, 0, 0, 160)
+            text_color=(255, 215, 0), 
+            bg_color=(0, 0, 0)
         )
+        # Yazı konumu 1150 piksel (görselin hemen altı, göz yormayan ideal konum)
         sub_clip = (ImageClip(sub_img_array)
                     .with_start(sub["start"])
                     .with_duration(sub["end"] - sub["start"])
-                    .with_position(('center', 1500)))
+                    .with_position(('center', 1150)))
         sub_clips.append(sub_clip)
 
     clips = [video_sequence] + sub_clips
