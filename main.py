@@ -77,7 +77,6 @@ def parse_srt(file_path):
     return subtitles
 
 def get_best_font():
-    """Sistemdeki mevcut fontları tarar ve en uygun olanı seçer"""
     candidates = [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
@@ -87,14 +86,13 @@ def get_best_font():
         if os.path.exists(font):
             return font
             
-    # Hiçbiri yoksa sistemdeki herhangi bir ttf bul
     all_ttfs = glob.glob("/usr/share/fonts/**/*.ttf", recursive=True)
     if all_ttfs:
         return all_ttfs[0]
         
     return None
 
-def create_subtitle_image(text, font_path, font_size=50, max_width=950):
+def create_subtitle_image(text, font_path, font_size=42, max_width=950):
     try:
         if font_path and os.path.exists(font_path):
             font = ImageFont.truetype(font_path, font_size)
@@ -103,17 +101,16 @@ def create_subtitle_image(text, font_path, font_size=50, max_width=950):
     except Exception:
         font = ImageFont.load_default()
 
-    wrapped_lines = textwrap.wrap(text, width=30)
+    wrapped_lines = textwrap.wrap(text, width=34)
     if not wrapped_lines:
         wrapped_lines = [text]
 
-    line_height = font_size + 15
-    padding_y = 20
+    line_height = font_size + 12
+    padding_y = 15
     
     total_height = len(wrapped_lines) * line_height + (padding_y * 2)
     total_width = max_width
 
-    # RGB modunda net siyah arka plan (Görünmeme riskini sıfırlar)
     img = Image.new("RGB", (total_width, total_height), (0, 0, 0))
     draw = ImageDraw.Draw(img)
 
@@ -127,14 +124,13 @@ def create_subtitle_image(text, font_path, font_size=50, max_width=950):
             
         x_text = (total_width - w) / 2
         
-        # Altın sarısı renk (#FFD700)
         draw.text((x_text, y_text), line, font=font, fill=(255, 215, 0))
         y_text += line_height
 
     return np.array(img)
 
 def create_video():
-    print("Creating video with guaranteed visible subtitles and zoom effect...")
+    print("Creating video with subtitles forced to the top layer...")
     
     if not os.path.exists(AUDIO_FILE):
         raise FileNotFoundError(f"{AUDIO_FILE} bulunamadı!")
@@ -182,10 +178,11 @@ def create_video():
         txt_clip = (ImageClip(sub_img_array)
                     .with_start(start_time)
                     .with_duration(duration)
-                    .with_position(('center', 1350)))
+                    .with_position(('center', 1650)))
         
         subtitle_clips.append(txt_clip)
 
+    # KATMAN SIRALAMASI: Video arka planda, altyazılar (subtitle_clips) ise kesinlikle en üst katmanda yer alacak şekilde birleştiriliyor.
     final_video = CompositeVideoClip([video_sequence] + subtitle_clips).with_audio(audio_clip)
     
     final_video.write_videofile(
