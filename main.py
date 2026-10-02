@@ -1,7 +1,7 @@
 import asyncio
 import os
 from edge_tts import Communicate
-from moviepy import ImageClip, AudioFileClip, concatenate_videoclips
+from moviepy import ImageClip, AudioFileClip, concatenate_videoclips, TextClip, CompositeVideoClip
 
 TEXT_CONTENT = (
     "Mentioned in sacred texts across multiple major religions... "
@@ -16,16 +16,15 @@ OUTPUT_FILE = "output.mp4"
 
 async def generate_audio():
     print("Generating voiceover...")
-    communicate = Communicate(TEXT_CONTENT, "en-US-AriaNeural")
+    communicate = Communicate(TEXT_CONTENT, "en-US-AndrewNeural")
     await communicate.save(AUDIO_FILE)
 
 def create_video():
-    print("Creating video with 6 images from the root directory...")
+    print("Creating video with resized images, male voice, and subtitles...")
     
     audio_clip = AudioFileClip(AUDIO_FILE)
     total_duration = audio_clip.duration
     
-    # Ana dizine yüklediğin görseller
     image_paths = [
         "IMG_2047.jpeg",
         "IMG_2048.jpeg",
@@ -41,20 +40,38 @@ def create_video():
 
     duration_per_image = total_duration / len(image_paths)
     
-    # Güncel sürüm için .with_duration() kullanıldı
-    image_clips = [ImageClip(img).with_duration(duration_per_image) for img in image_paths]
+    image_clips = []
+    for img in image_paths:
+        clip = (ImageClip(img)
+                .with_duration(duration_per_image)
+                .resized(width=1080))
+        image_clips.append(clip)
     
     video_sequence = concatenate_videoclips(image_clips, method="compose")
     
-    final_video = video_sequence.with_audio(audio_clip)
+    txt_clip = (TextClip(text=TEXT_CONTENT,
+                         font="Arial-Bold",
+                         font_size=60,
+                         color='white',
+                         stroke_color='black',
+                         stroke_width=2,
+                         size=(1000, None),
+                         method='caption',
+                         text_align='center')
+                .with_duration(total_duration)
+                .with_position(('center', 'center')))
+
+    final_video = CompositeVideoClip([video_sequence, txt_clip]).with_audio(audio_clip)
     
-    final_video.write_videofile(
+        final_video.write_videofile(
         OUTPUT_FILE,
-        fps=24,
+        fps=30,
         codec="libx264",
         audio_codec="aac",
-        preset="medium"
+        preset="medium",
+        bitrate="5M"  # Bit hızını yükseltiyoruz
     )
+
     print(f"Video successfully created: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
