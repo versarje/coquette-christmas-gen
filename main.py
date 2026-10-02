@@ -1,7 +1,7 @@
 import asyncio
 import os
 from edge_tts import Communicate
-from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
+from moviepy import ImageClip, AudioFileClip, concatenate_videoclips
 
 TEXT_CONTENT = (
     "Mentioned in sacred texts across multiple major religions... "
@@ -25,13 +25,13 @@ def create_video():
     audio_clip = AudioFileClip(AUDIO_FILE)
     total_duration = audio_clip.duration
     
-    # Ana dizine yüklediğin görsellerin tam dosya adları ve uzantıları
+    # Ana dizine yüklediğin görseller
     image_paths = [
         "IMG_2047.jpeg",
         "IMG_2048.jpeg",
         "IMG_2049.webp",
         "IMG_2050.jpeg",
-        "IMG_2050.jpeg", # Eğer biri farklıysa burayı güncelleyebilirsin
+        "IMG_2050.jpeg", 
         "IMG_2051.jpeg"
     ]
     
@@ -39,19 +39,14 @@ def create_video():
         if not os.path.exists(img):
             raise FileNotFoundError(f"{img} ana dizinde bulunamadı! Lütfen dosya adını kontrol et.")
 
-    # Toplam süreyi 6 görsele eşit olarak paylaştırıyoruz
     duration_per_image = total_duration / len(image_paths)
     
-    # Görsel kliplerini oluşturuyoruz (webp ve jpeg formatlarını MoviePy destekler)
     image_clips = [ImageClip(img).set_duration(duration_per_image) for img in image_paths]
     
-    # Görselleri arka arkaya birleştir
     video_sequence = concatenate_videoclips(image_clips, method="compose")
     
-    # Ses klibini videoya ekle
-    final_video = video_sequence.set_audio(audio_clip)
+    final_video = video_sequence.with_audio(audio_clip)
     
-    # Dikey Shorts formatında kaydet
     final_video.write_videofile(
         OUTPUT_FILE,
         fps=24,
