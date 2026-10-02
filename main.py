@@ -63,7 +63,7 @@ def get_best_font():
         
     return None
 
-def create_text_image(text, font_path, font_size=55, text_color=(255, 215, 0), bg_color=(0, 0, 0), max_width=950):
+def create_text_image(text, font_path, font_size=50, text_color=(255, 215, 0), max_width=950):
     try:
         if font_path and os.path.exists(font_path):
             font = ImageFont.truetype(font_path, font_size)
@@ -72,17 +72,18 @@ def create_text_image(text, font_path, font_size=55, text_color=(255, 215, 0), b
     except Exception:
         font = ImageFont.load_default()
 
-    wrapped_lines = textwrap.wrap(text, width=25)
+    wrapped_lines = textwrap.wrap(text, width=28)
     if not wrapped_lines:
         wrapped_lines = [text]
 
     line_height = font_size + 15
-    padding_y = 20
+    padding_y = 15
     
     total_height = len(wrapped_lines) * line_height + (padding_y * 2)
     total_width = max_width
 
-    img = Image.new("RGB", (total_width, total_height), bg_color)
+    # Şeffaf RGBA arka plan
+    img = Image.new("RGBA", (total_width, total_height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
     y_text = padding_y
@@ -95,13 +96,18 @@ def create_text_image(text, font_path, font_size=55, text_color=(255, 215, 0), b
             
         x_text = (total_width - w) / 2
         
-        draw.text((x_text, y_text), line, font=font, fill=text_color)
+        # Okunabilirlik için siyah gölge efekti
+        shadow_offset = 3
+        draw.text((x_text + shadow_offset, y_text + shadow_offset), line, font=font, fill=(0, 0, 0, 255))
+        # Ana sarı metin
+        draw.text((x_text, y_text), line, font=font, fill=(text_color[0], text_color[1], text_color[2], 255))
+        
         y_text += line_height
 
     return np.array(img)
 
 def create_video():
-    print("Creating video with phrase-based synchronized subtitles...")
+    print("Creating video with progressive word-by-word subtitles...")
     
     if not os.path.exists(AUDIO_FILE):
         raise FileNotFoundError(f"{AUDIO_FILE} bulunamadı!")
@@ -137,42 +143,40 @@ def create_video():
 
     words = word_timestamps if word_timestamps else [{"word": TEXT_CONTENT, "start": 0, "end": total_duration}]
     
-    # 5'erli kelime grupları (öbekler) halinde akması için chunk_size = 5 yapıldı
+    # 5 kelimelik gruplar halinde kelime kelime üst üste eklenerek yazılacak
     chunk_size = 5
-    subtitle_chunks = []
+    sub_clips = []
     
     for i in range(0, len(words), chunk_size):
         chunk_words = words[i:i + chunk_size]
-        chunk_text = " ".join([w["word"] for w in chunk_words])
-        start_t = chunk_words[0]["start"]
         
-        # Bir sonraki öbeğin başladığı ana kadar ekranda kalır, böylece üst üste yığılma olmaz
-        if i + chunk_size < len(words):
-            end_t = words[i + chunk_size]["start"]
-        else:
-            end_t = chunk_words[-1]["end"] + 0.5
+        # Grubun içindeki her kelime için aşamalı olarak metni büyütüyoruz
+        for j in range(len(chunk_words)):
+            current_text = " ".join([w["word"] for w in chunk_words[:j+1]])
+            start_t = chunk_words[j]["start"]
             
-        subtitle_chunks.append({
-            "text": chunk_text,
-            "start": start_t,
-            "end": max(end_t, start_t + 0.6) # Minimum okunabilirlik süresi
-        })
-
-    sub_clips = []
-    for sub in subtitle_chunks:
-        sub_img_array = create_text_image(
-            sub["text"], 
-            font_path, 
-            font_size=55, 
-            text_color=(255, 215, 0), 
-            bg_color=(0, 0, 0)
-        )
-        # Yazı konumu 1150 piksel (görselin hemen altı, göz yormayan ideal konum)
-        sub_clip = (ImageClip(sub_img_array)
-                    .with_start(sub["start"])
-                    .with_duration(sub["end"] - sub["start"])
-                    .with_position(('center', 1150)))
-        sub_clips.append(sub_clip)
+            # Süre hesaplama: Sonraki kelimenin başlangıcına kadar veya grubun sonuna kadar
+            if j + 1 < len(chunk_words):
+                end_t = chunk_words[j + 1]["start"]
+            else:
+                if i + chunk_size < len(words):
+                    end_t = words[i + chunk_size]["start"]
+                else:
+                    end_t = chunk_words[-1]["end"] + 0.5
+            
+            duration = max(0.15, end_t - start_t)
+            
+            sub_img_array = create_text_image(
+                current_text, 
+                font_path, 
+                font_size=50, 
+                text_color=(255, 215, 0)
+            )
+            sub_clip = (ImageClip(sub_img_array)
+                        .with_start(start_t)
+                        .with_duration(duration)
+                        .with_position(('center', 1100)))
+            sub_clips.append(sub_clip)
 
     clips = [video_sequence] + sub_clips
 
