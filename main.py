@@ -47,12 +47,21 @@ def create_text_image(text, font_path, font_size=50, text_color=(255, 215, 0), m
         wrapped_lines = [text]
 
     line_height = font_size + 15
-    padding_y = 20
+    padding_y = 25
+    padding_x = 30
+    
     total_height = len(wrapped_lines) * line_height + (padding_y * 2)
     
-    # Şeffaf arka plan
+    # Yarı saydam siyah arka plan kutusu (RGBA formatında, son değer alfa/saydamlık 160)
     img = Image.new("RGBA", (max_width, total_height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
+    
+    # Kutuyu çiz (köşeleri hafif yumuşatılmış veya direkt dikdörtgen)
+    draw.rounded_rectangle(
+        [(0, 0), (max_width, total_height)], 
+        radius=15, 
+        fill=(0, 0, 0, 160)
+    )
 
     y_text = padding_y
     for line in wrapped_lines:
@@ -64,9 +73,8 @@ def create_text_image(text, font_path, font_size=50, text_color=(255, 215, 0), m
             
         x_text = (max_width - w) / 2
         
-        # Gölge efekti
-        draw.text((x_text + 3, y_text + 3), line, font=font, fill=(0, 0, 0, 255))
-        # Ana metin
+        # Yazı rengi ve gölgesi
+        draw.text((x_text + 2, y_text + 2), line, font=font, fill=(0, 0, 0, 255))
         draw.text((x_text, y_text), line, font=font, fill=(text_color[0], text_color[1], text_color[2], 255))
         y_text += line_height
 
@@ -95,31 +103,27 @@ def create_video():
     
     font_path = get_best_font()
     
-    # Metni cümlelere veya anlamlı küçük parçalara bölelim
+    # Metni cümlelere bölme
     sentences = [s.strip() for s in TEXT_CONTENT.replace("?", ".").split(".") if s.strip()]
-    
-    # Her cümleye sesin uzunluğuna göre orantılı süre veriyoruz
     total_chars = sum(len(s) for s in sentences)
     
     sub_clips = []
     current_time = 0.0
     
     for sentence in sentences:
-        # Cümle uzunluğuna göre süre paylaştırıyoruz
         duration = (len(sentence) / total_chars) * total_duration
-        duration = max(duration, 1.5) # Minimum 1.5 saniye ekranda kalsın
+        duration = max(duration, 1.5) # Minimum süre
         
         sub_img_array = create_text_image(sentence, font_path, font_size=50)
         
         sub_clip = (ImageClip(sub_img_array)
                     .with_start(current_time)
                     .with_duration(duration)
-                    .with_position(('center', 1100)))
+                    .with_position(('center', 1050)))
         
         sub_clips.append(sub_clip)
         current_time += duration
 
-    # Eğer süre toplam süreyi aşarsa eşitleyelim
     final_video = CompositeVideoClip([video_sequence] + sub_clips).with_audio(audio_clip)
     
     final_video.write_videofile(
