@@ -5,10 +5,9 @@ import textwrap
 import edge_tts
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
-from moviepy import ColorClip, AudioFileClip, ImageClip, CompositeVideoClip
+from moviepy import ColorClip, AudioFileClip, ImageClip, concatenate_videoclips, CompositeVideoClip
 
 TEXT_CONTENT = "deneme basardi"
-HOOK_TEXT = "deneme"
 SUBTITLE_TEXT = "deneme basardi"
 
 AUDIO_FILE = "voiceover.mp3"
@@ -40,7 +39,7 @@ def get_best_font():
         
     return None
 
-def create_text_image(text, font_path, font_size=50, text_color=(255, 215, 0, 255), bg_color=(0, 0, 0, 160), max_width=950):
+def create_text_image(text, font_path, font_size=55, text_color=(255, 215, 0, 255), bg_color=(0, 0, 0, 160), max_width=950):
     try:
         if font_path and os.path.exists(font_path):
             font = ImageFont.truetype(font_path, font_size)
@@ -78,7 +77,7 @@ def create_text_image(text, font_path, font_size=50, text_color=(255, 215, 0, 25
     return np.array(img)
 
 def create_video():
-    print("Creating video with hook and subtitles...")
+    print("Creating video with automatic images and zoom effect...")
     
     if not os.path.exists(AUDIO_FILE):
         raise FileNotFoundError(f"{AUDIO_FILE} bulunamadı!")
@@ -86,30 +85,36 @@ def create_video():
     audio_clip = AudioFileClip(AUDIO_FILE)
     total_duration = audio_clip.duration
     
-    # 1080x1920 boyutunda siyah arka plan
-    bg_clip = ColorClip(size=(1080, 1920), color=(0, 0, 0)).with_duration(total_duration)
+    # Klasördeki tüm görselleri otomatik tara ve sırala
+    image_extensions = ("*.jpg", "*.jpeg", "*.png", "*.webp")
+    image_paths = []
+    for ext in image_extensions:
+        image_paths.extend(glob.glob(ext))
+    image_paths.sort()
+    
+    if image_paths:
+        print(f"Bulunan görseller: {image_paths}")
+        duration_per_image = total_duration / len(image_paths)
+        
+        image_clips = []
+        for img in image_paths:
+            clip = (ImageClip(img)
+                    .with_duration(duration_per_image)
+                    .resized(width=1080)
+                    .resized(lambda t: 1.0 + 0.07 * (t / duration_per_image)))
+            image_clips.append(clip)
+        
+        video_sequence = concatenate_videoclips(image_clips, method="compose")
+    else:
+        print("Ana dizinde görsel bulunamadı, siyah arka plan kullanılıyor.")
+        video_sequence = ColorClip(size=(1080, 1920), color=(0, 0, 0)).with_duration(total_duration)
     
     font_path = get_best_font()
     print(f"Selected font path: {font_path}")
 
-    clips = [bg_clip]
+    clips = [video_sequence]
     
-    # 1. Kanca (Hook) - Videonun ilk 3 saniyesi boyunca üst-orta kısımda (kırmızımsı arka plan ile dikkat çekici)
-    hook_duration = min(3.0, total_duration)
-    hook_img_array = create_text_image(
-        HOOK_TEXT, 
-        font_path, 
-        font_size=70, 
-        text_color=(255, 255, 255, 255), 
-        bg_color=(180, 0, 0, 220)
-    )
-    hook_clip = (ImageClip(hook_img_array)
-                 .with_start(0)
-                 .with_duration(hook_duration)
-                 .with_position(('center', 600)))
-    clips.append(hook_clip)
-    
-    # 2. Alt Yazı (Subtitle) - Videonun başından sonuna kadar alt kısımda (altın sarısı renk ve yarı saydam siyah kutu ile)
+    # Alt Yazı (Subtitle) - Videonun başından sonuna kadar alt kısımda
     sub_img_array = create_text_image(
         SUBTITLE_TEXT, 
         font_path, 
