@@ -28,12 +28,12 @@ async def generate_audio_and_subtitles():
             elif chunk["type"] == "WordBoundary":
                 submaker.feed(chunk)
                 
-    # edge-tts'in yerleşik SRT oluşturucusunu kullanarak altyazı dosyasını kaydediyoruz
+    # edge-tts SubMaker get_srt() metodu güvenli şekilde çağrılıyor
+    srt_content = submaker.get_srt()
     with open(SUBTITLE_FILE, "w", encoding="utf-8") as f:
-        f.write(submaker.generate_srt())
+        f.write(srt_content)
 
 def parse_srt(file_path):
-    """SRT dosyasını okuyup zaman aralıkları ve metinleri liste olarak döndürür"""
     subtitles = []
     if not os.path.exists(file_path):
         return subtitles
@@ -47,22 +47,31 @@ def parse_srt(file_path):
             time_line = lines[1]
             text_line = " ".join(lines[2:])
             
-            # Zaman formatı: 00:00:01,234 --> 00:00:04,567
+            if " --> " not in time_line:
+                continue
+                
             start_str, end_str = time_line.split(" --> ")
             
             def time_to_seconds(t_str):
-                h, m, s_ms = t_str.split(":")
+                parts = t_str.split(":")
+                h = int(parts[0])
+                m = int(parts[1])
+                s_ms = parts[2].replace(".", ",") # Bazı format uyumlulukları için
                 s, ms = s_ms.split(",")
-                return int(h) * 3600 + int(m) * 60 + int(s) + int(ms) / 1000
+                return h * 3600 + m * 60 + int(s) + int(ms) / 1000
                 
-            start_sec = time_to_seconds(start_str)
-            end_sec = time_to_seconds(end_str)
-            
-            subtitles.append({
-                "start": start_sec,
-                "end": end_sec,
-                "text": text_line
-            })
+            try:
+                start_sec = time_to_seconds(start_str)
+                end_sec = time_to_seconds(end_str)
+                
+                subtitles.append({
+                    "start": start_sec,
+                    "end": end_sec,
+                    "text": text_line
+                })
+            except Exception as e:
+                print(f"Zaman ayrıştırma hatası atlandı: {e}")
+                continue
             
     return subtitles
 
@@ -99,11 +108,11 @@ def create_video():
     
     video_sequence = concatenate_videoclips(image_clips, method="compose")
     
+    # Linux sunucularda garanti çalışan font yolu
     font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
     if not os.path.exists(font_path):
         font_path = "Arial"
 
-    # SRT altyazılarını parse et
     subs = parse_srt(SUBTITLE_FILE)
     
     subtitle_clips = []
@@ -112,7 +121,6 @@ def create_video():
         duration = max(0.5, sub["end"] - start_time)
         text = sub["text"]
         
-        # Altın sarısı renk ve yarı saydam siyah kutu
         txt_clip = (TextClip(text=text,
                              font=font_path,
                              font_size=55,
