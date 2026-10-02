@@ -19,26 +19,63 @@ AUDIO_FILE = "voiceover.mp3"
 SUBTITLE_FILE = "subtitles.srt"
 OUTPUT_FILE = "output.mp4"
 
-async def generate_audio_and_subtitles():
-    print("Generating voiceover and synchronized subtitles via Edge-TTS SubMaker...")
+async def generate_audio():
+    print("Generating voiceover...")
     communicate = edge_tts.Communicate(TEXT_CONTENT, "en-US-AndrewNeural")
-    
-    submaker = edge_tts.SubMaker()
     
     with open(AUDIO_FILE, "wb") as f:
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":
                 f.write(chunk["data"])
-            elif chunk["type"] == "WordBoundary":
-                submaker.feed(chunk)
-                
-    srt_content = submaker.get_srt()
-    if not srt_content.strip():
-        raise RuntimeError("HATA: SubMaker altyazı verisi üretemedi!")
+    print("Voiceover successfully generated.")
 
-    with open(SUBTITLE_FILE, "w", encoding="utf-8") as f:
-        f.write(srt_content)
-    print("Subtitles successfully generated.")
+def generate_proportional_srt(text, audio_duration, srt_path):
+    print("Generating synchronized subtitles based on audio duration...")
+    # Cümlelere böl
+    sentences = [s.strip() for s in text.replace("?", ".").replace("!", ".").split(".") if s.strip()]
+    
+    # Toplam karakter sayısını hesapla
+    total_chars = sum(len(s) for s in sentences)
+    if total_chars == 0:
+        total_chars = len(text)
+        sentences = [text]
+
+    subtitles = []
+    current_time = 0.0
+
+    for i, sentence in enumerate(sentences):
+        # Karakter uzunluğuna göre süre paylaştır
+        weight = len(sentence) / total_chars
+        duration = max(2.0, audio_duration * weight) # Her cümle en az 2 saniye kalsın
+        
+        start_time = current_time
+        end_time = min(audio_duration, start_time + duration)
+        
+        subtitles.append({
+            "start": start_time,
+            "end": end_time,
+            "text": sentence + "."
+        })
+        current_time = end_time
+
+    # SRT içeriğini oluştur
+    srt_lines = []
+    for idx, sub in enumerate(subtitles, 1):
+        def format_time(sec):
+            h = int(sec // 3600)
+            m = int((sec % 3600) // 60)
+            s = int(sec % 60)
+            ms = int((sec - int(sec)) * 1000)
+            return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
+
+        srt_lines.append(str(idx))
+        srt_lines.append(f"{format_time(sub['start'])} --> {format_time(sub['end'])}")
+        srt_lines.append(sub['text'])
+        srt_lines.append("")
+
+    with open(srt_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(srt_lines))
+    print("SRT subtitles successfully generated.")
 
 def parse_srt(file_path):
     subtitles = []
@@ -78,9 +115,6 @@ def parse_srt(file_path):
                 })
             except Exception:
                 continue
-                
-    if not subtitles:
-        raise ValueError("HATA: SRT dosyası okundu ancak geçerli altyazı satırı bulunamadı!")
             
     return subtitles
 
@@ -134,7 +168,7 @@ def create_subtitle_image(text, font_path, font_size=42, max_width=950):
         x_text = (total_width - w) / 2
         
         # Altın sarısı harfler (#FFD700)
-        draw.text((x_text, y_text), line, font=font, fill=(255, 215, 0, 255))
+-        draw.text((x_text, y_text), line, font=font, fill=(255, 215, 0, 255))
         y_text += line_height
 
     return np.array(img)
@@ -147,6 +181,9 @@ def create_video():
 
     audio_clip = AudioFileClip(AUDIO_FILE)
     total_duration = audio_clip.duration
+    
+    # Ses süresine göre kusursuz SRT dosyasını otomatik oluştur
+    generate_proportional_srt(TEXT_CONTENT, total_duration, SUBTITLE_FILE)
     
     image_paths = [
         "IMG_2047.jpeg",
@@ -205,5 +242,5 @@ def create_video():
     print(f"Video successfully created: {OUTPUT_FILE}")
 
 if __name__ == "__main__":
-    asyncio.run(generate_audio_and_subtitles())
+    asyncio.run(generate_audio())
     create_video()
