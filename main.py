@@ -4,11 +4,11 @@ import edge_tts
 from moviepy import ImageClip, AudioFileClip, concatenate_videoclips, TextClip, CompositeVideoClip
 
 TEXT_CONTENT = (
-    "Mentioned in sacred texts across multiple major religions... "
+    "Mentioned in sacred texts across multiple major religions. "
     "High up on Mount Ararat in Turkey, satellite images captured a strange, boat-shaped anomaly. "
     "Hidden deep beneath thick layers of ice and mud, untouched for centuries. "
-    "Roughly 150 meters long... matching the exact dimensions of history's most famous vessel. "
-    "Is it just a bizarre coincidence of nature... or the greatest secret frozen right there?"
+    "Roughly 150 meters long, matching the exact dimensions of history's most famous vessel. "
+    "Is it just a bizarre coincidence of nature, or the greatest secret frozen right there?"
 )
 
 AUDIO_FILE = "voiceover.mp3"
@@ -16,7 +16,7 @@ SUBTITLE_FILE = "subtitles.srt"
 OUTPUT_FILE = "output.mp4"
 
 async def generate_audio_and_subtitles():
-    print("Generating voiceover and synchronized subtitles...")
+    print("Generating voiceover and subtitles...")
     communicate = edge_tts.Communicate(TEXT_CONTENT, "en-US-AndrewNeural")
     
     submaker = edge_tts.SubMaker()
@@ -28,10 +28,8 @@ async def generate_audio_and_subtitles():
             elif chunk["type"] == "WordBoundary":
                 submaker.feed(chunk)
                 
-    # edge-tts SubMaker get_srt() metodu güvenli şekilde çağrılıyor
-    srt_content = submaker.get_srt()
     with open(SUBTITLE_FILE, "w", encoding="utf-8") as f:
-        f.write(srt_content)
+        f.write(submaker.get_srt())
 
 def parse_srt(file_path):
     subtitles = []
@@ -56,7 +54,7 @@ def parse_srt(file_path):
                 parts = t_str.split(":")
                 h = int(parts[0])
                 m = int(parts[1])
-                s_ms = parts[2].replace(".", ",") # Bazı format uyumlulukları için
+                s_ms = parts[2].replace(".", ",")
                 s, ms = s_ms.split(",")
                 return h * 3600 + m * 60 + int(s) + int(ms) / 1000
                 
@@ -64,19 +62,19 @@ def parse_srt(file_path):
                 start_sec = time_to_seconds(start_str)
                 end_sec = time_to_seconds(end_str)
                 
+                # Çok kısa parçaları birleştirmek veya minimum süre vermek için
                 subtitles.append({
                     "start": start_sec,
                     "end": end_sec,
                     "text": text_line
                 })
             except Exception as e:
-                print(f"Zaman ayrıştırma hatası atlandı: {e}")
                 continue
             
     return subtitles
 
 def create_video():
-    print("Creating video with synchronized golden subtitles and background boxes...")
+    print("Creating video with visible golden subtitles...")
     
     if not os.path.exists(AUDIO_FILE):
         raise FileNotFoundError(f"{AUDIO_FILE} bulunamadı!")
@@ -108,7 +106,6 @@ def create_video():
     
     video_sequence = concatenate_videoclips(image_clips, method="compose")
     
-    # Linux sunucularda garanti çalışan font yolu
     font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
     if not os.path.exists(font_path):
         font_path = "Arial"
@@ -118,24 +115,25 @@ def create_video():
     subtitle_clips = []
     for sub in subs:
         start_time = sub["start"]
-        duration = max(0.5, sub["end"] - start_time)
+        duration = max(1.0, sub["end"] - start_time) # Altyazıların ekranda rahat okunması için min 1 saniye süre
         text = sub["text"]
         
+        # Yazı rengi altın sarısı (gold), arkasında net okunabilirlik için siyah şerit kutu (bg_color)
         txt_clip = (TextClip(text=text,
                              font=font_path,
-                             font_size=55,
+                             font_size=50,
                              color='gold',
-                             bg_color='rgba(0, 0, 0, 0.6)', 
-                             margin_top=20,
-                             margin_bottom=20,
-                             margin_left=30,
-                             margin_right=30,
+                             bg_color='black',  # Şeffaflık yerine net siyah kutu ile garanti görünürlük
+                             margin_top=15,
+                             margin_bottom=15,
+                             margin_left=25,
+                             margin_right=25,
                              method='caption',
-                             size=(900, None),
+                             size=(950, None),
                              text_align='center')
                     .with_start(start_time)
                     .with_duration(duration)
-                    .with_position(('center', 1300)))
+                    .with_position(('center', 1350)))
         
         subtitle_clips.append(txt_clip)
 
